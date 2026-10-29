@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ウゴキラボ｜AIに渡す「設計図」で、ページに欲しかった動きを</title>
+<meta name="description" content="AIで作ったページに“欲しかった動き”を付ける「設計図」を作っています。カンバンのドラッグ、動くアイコン。無料サンプルはLINEで配布中。">
+<style>
+  :root{
+    --bg:#F6F7F9; --card:#FFFFFF; --ink:#111827; --sub:#5F6B7A;
+    --blue:#0090E0; --blue-d:#0068B7; --navy:#0B3556; --pale:#EAF5FF; --line:#E6E9EE;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--ink);
+    font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",sans-serif;
+    line-height:1.8; -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:880px;margin:0 auto;padding:0 20px 72px;}
+  h2{font-size:27px;font-weight:900;line-height:1.5;margin-bottom:10px;}
+  .sec{margin-top:64px;}
+  .sec .lead{color:var(--sub);font-size:15.5px;margin-bottom:22px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;
+    padding:26px 26px;box-shadow:0 2px 10px rgba(11,53,86,.05);}
+  .btn{display:inline-block;border-radius:999px;font-weight:800;text-decoration:none;
+    padding:15px 34px;font-size:16.5px;line-height:1.3;}
+  .btn-white{background:#fff;color:var(--navy);}
+  .btn-navy{background:var(--navy);color:#fff;}
+  .btn-line{background:#06C755;color:#fff;}
+  .btn-ghost{color:#fff;text-decoration:underline;text-underline-offset:4px;font-weight:700;}
+  .chip{display:inline-block;font-size:12.5px;font-weight:800;border-radius:999px;
+    padding:3px 12px;vertical-align:middle;}
+  .chip-free{background:#E7F8EE;color:#0B7A43;}
+  .chip-paid{background:var(--pale);color:var(--blue-d);}
+  .chip-done{background:#E7F8EE;color:#0B7A43;}
+  .chip-wip{background:#FFF3D6;color:#9A6B00;}
+  .price{font-weight:900;font-size:19px;}
+  .price s{color:var(--sub);font-weight:600;font-size:14.5px;margin-right:8px;}
+  .note{font-size:13px;color:var(--sub);}
+
+  /* ---------- hero ---------- */
+  .hero{background:linear-gradient(180deg,#0093E8 0%,#0068B7 100%);color:#fff;
+    border-radius:0 0 32px 32px;padding:26px 20px 54px;}
+  .hero-in{max-width:880px;margin:0 auto;}
+  .hero-top{display:flex;align-items:center;justify-content:space-between;}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:19px;letter-spacing:.04em;}
+  .brand .mark{width:38px;height:38px;border-radius:11px;background:#fff;color:var(--blue-d);
+    display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;}
+  .hero-top .sns{font-size:14px;font-weight:700;color:#fff;text-decoration:underline;text-underline-offset:4px;}
+  .hero .pill{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.45);
+    border-radius:999px;padding:5px 16px;font-size:13.5px;font-weight:700;margin:44px 0 16px;}
+  .hero h1{font-size:34px;font-weight:900;line-height:1.45;}
+  .hero .sub{margin-top:14px;font-size:16px;color:#EAF5FF;}
+  .hero .cta{margin-top:28px;display:flex;align-items:center;gap:22px;flex-wrap:wrap;}
+  .hero .note{color:#CFE9FA;margin-top:12px;}
+
+  /* ---------- motion demos (ブランドの顔) ---------- */
+  .demos{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:-30px;}
+  .demo{background:var(--card);border:1px solid var(--line);border-radius:18px;
+    padding:18px 10px 12px;text-align:center;box-shadow:0 2px 10px rgba(11,53,86,.05);}
+  .demo .box{height:96px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+  .demo .cap{font-size:13.5px;font-weight:800;color:var(--navy);}
+  /* drag mini */
+  .track{position:relative;width:150px;height:64px;}
+  .slot{position:absolute;top:6px;width:44px;height:52px;border-radius:10px;background:var(--pale);}
+  .slot.s1{left:2px;}.slot.s2{left:53px;}.slot.s3{left:104px;background:#fff;border:1px dashed var(--line);}
+  .mini-card{position:absolute;top:6px;left:2px;width:44px;height:52px;border-radius:10px;z-index:2;
+    background:#fff;border:1.5px solid var(--blue);box-shadow:0 2px 6px rgba(11,53,86,.15);
+    animation:dragLoop 4s cubic-bezier(.3,.7,.3,1) infinite;}
+  .mini-card::after{content:"";position:absolute;left:8px;top:10px;width:26px;height:6px;border-radius:3px;background:var(--blue);opacity:.55;}
+  .mini-card::before{content:"";position:absolute;left:8px;top:24px;width:18px;height:6px;border-radius:3px;background:var(--navy);opacity:.3;}
+  @keyframes dragLoop{
+    0%,12%{transform:translate(0,0) scale(1);box-shadow:0 2px 6px rgba(11,53,86,.15);}
+    22%{transform:translate(3px,-5px) scale(1.07);box-shadow:0 14px 22px rgba(11,53,86,.28);}
+    48%{transform:translate(105px,-5px) scale(1.07);box-shadow:0 14px 22px rgba(11,53,86,.28);}
+    58%,88%{transform:translate(102px,0) scale(1);box-shadow:0 2px 6px rgba(11,53,86,.15);}
+    97%,100%{transform:translate(0,0) scale(1);}
+  }
+  /* draw + gear svg */
+  .demo svg{width:72px;height:72px;}
+  .ring{stroke:var(--blue);stroke-width:5;fill:none;stroke-linecap:round;
+    stroke-dasharray:100;stroke-dashoffset:100;transform:rotate(-90deg);transform-origin:center;
+    animation:drawRing 4s ease-in-out infinite;}
+  .tick{stroke:var(--navy);stroke-width:6;fill:none;stroke-linecap:round;stroke-linejoin:round;
+    stroke-dasharray:100;stroke-dashoffset:100;animation:drawTick 4s ease-in-out infinite;}
+  @keyframes drawRing{0%{stroke-dashoffset:100;}35%,88%{stroke-dashoffset:0;}97%,100%{stroke-dashoffset:100;}}
+  @keyframes drawTick{0%,35%{stroke-dashoffset:100;}55%,88%{stroke-dashoffset:0;}97%,100%{stroke-dashoffset:100;}}
+  .gear{font-size:56px;line-height:1;color:var(--blue);display:inline-block;animation:gearStep 4s linear infinite;}
+  @keyframes gearStep{
+    0%,10%{transform:rotate(0deg);}14%,24%{transform:rotate(48deg);}28%,38%{transform:rotate(93deg);}
+    42%,52%{transform:rotate(138deg);}56%,66%{transform:rotate(183deg);}70%,80%{transform:rotate(228deg);}
+    84%,94%{transform:rotate(273deg);}98%,100%{transform:rotate(318deg);}
+  }
+  .heartp{fill:var(--blue);fill-opacity:0;stroke:var(--blue);stroke-width:2.4;
+    stroke-dasharray:100;stroke-dashoffset:100;animation:heartMorph 4s ease-in-out infinite;}
+  @keyframes heartMorph{
+    0%{stroke-dashoffset:100;fill-opacity:0;}
+    32%{stroke-dashoffset:0;fill-opacity:0;}
+    52%,88%{stroke-dashoffset:0;fill-opacity:1;}
+    97%,100%{stroke-dashoffset:100;fill-opacity:0;}
+  }
+
+  /* ---------- generic sections ---------- */
+  .why{display:grid;gap:14px;}
+  .why .card{display:flex;gap:18px;align-items:flex-start;}
+  .why .num{flex:none;width:42px;height:42px;border-radius:50%;background:var(--blue);color:#fff;
+    font-weight:900;font-size:18px;display:flex;align-items:center;justify-content:center;}
+  .why .pain{font-weight:800;font-size:16.5px;}
+  .why .chg{color:var(--blue-d);font-weight:900;font-size:17.5px;margin-top:2px;}
+  .why p{color:var(--sub);font-size:14.5px;margin-top:4px;}
+  .products{display:grid;gap:14px;}
+  .products .card{display:flex;justify-content:space-between;gap:18px;align-items:center;flex-wrap:wrap;}
+  .products h3{font-size:18.5px;font-weight:900;line-height:1.55;}
+  .products .desc{color:var(--sub);font-size:14.5px;margin-top:4px;max-width:520px;}
+  .products .side{text-align:right;flex:none;}
+  .products .side .btn{margin-top:8px;padding:11px 24px;font-size:15px;}
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .steps .card{text-align:left;}
+  .steps .num{display:inline-flex;width:34px;height:34px;border-radius:50%;background:var(--navy);color:#fff;
+    font-weight:900;align-items:center;justify-content:center;margin-bottom:10px;}
+  .steps h3{font-size:16.5px;font-weight:900;}
+  .steps p{color:var(--sub);font-size:14px;margin-top:4px;}
+  .tools{display:grid;gap:10px;}
+  .tools .row{display:flex;justify-content:space-between;align-items:center;gap:14px;
+    background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 20px;}
+  .tools .row b{font-size:16px;}
+  .tools .row span{color:var(--sub);font-size:13.5px;display:block;}
+  .links{display:grid;gap:12px;}
+  .links a{display:flex;justify-content:space-between;align-items:center;text-decoration:none;
+    background:var(--card);border:1px solid var(--line);border-radius:14px;padding:17px 22px;color:var(--ink);}
+  .links a b{font-size:16.5px;}
+  .links a span{color:var(--sub);font-size:13.5px;}
+  .links a .arrow{color:var(--blue);font-weight:900;font-size:19px;}
+  .final{background:var(--pale);border-radius:24px;padding:42px 28px;text-align:center;margin-top:64px;}
+  .final h2{margin-bottom:8px;}
+  .final p{color:var(--sub);font-size:15px;margin-bottom:22px;}
+  footer{text-align:center;color:var(--sub);font-size:13px;margin-top:44px;letter-spacing:.06em;}
+  @media (max-width:640px){
+    .hero h1{font-size:28px;}
+    .demos{grid-template-columns:repeat(3,1fr);gap:10px;}
+    .demo .box{height:84px;}
+    .steps{grid-template-columns:1fr;}
+    .products .side{text-align:left;}
+    h2{font-size:24px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-in">
+    <div class="hero-top">
+      <div class="brand"><span class="mark">ウ</span>ウゴキラボ</div>
+      <a class="sns" href="https://www.instagram.com/ugokilab/">Instagram @ugokilab</a>
+    </div>
+    <span class="pill">AIに渡すだけで再現できる、動きの「設計図」</span>
+    <h1>AIで作ったページに、<br>“欲しかった動き”を。</h1>
+    <p class="sub">機能は作れるのに、動きだけが素人っぽくなる。<br>その動きを、色・寸法・時間まで実測して書き起こした「設計図」にしました。</p>
+    <div class="cta">
+      <a class="btn btn-white" href="https://lin.ee/vWNKtBL">無料サンプルを受け取る</a>
+      <a class="btn-ghost" href="#products">商品を見る</a>
+    </div>
+    <p class="note">無料サンプルはLINE登録でお渡ししています</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="demos">
+    <div class="demo">
+      <div class="box"><div class="track"><div class="slot s1"></div><div class="slot s2"></div><div class="slot s3"></div><div class="mini-card"></div></div></div>
+      <div class="cap">つかんで、動く</div>
+    </div>
+    <div class="demo">
+      <div class="box">
+        <svg viewBox="0 0 64 64"><circle class="ring" cx="32" cy="32" r="26" pathLength="100"/><path class="tick" d="M21 33 L29 41 L44 25" pathLength="100"/></svg>
+      </div>
+      <div class="cap">線が描かれる</div>
+    </div>
+    <div class="demo">
+      <div class="box">
+        <svg viewBox="0 0 64 64"><path class="heartp" pathLength="100" d="M32 57 C15 44 7 34 7 23 C7 14 14 7 22 7 C27 7 31 10 32 15 C33 10 37 7 42 7 C50 7 57 14 57 23 C57 34 49 44 32 57 Z"/></svg>
+      </div>
+      <div class="cap">塗りが満ちる</div>
+    </div>
+  </div>
+
+  <section class="sec">
+    <h2>ウゴキラボについて。</h2>
+    <p class="lead">AIを使って、自分の「やりたい」を実現する。その過程と道具を発信しています。</p>
+    <div class="card">
+      <p>はじめまして、ウゴキラボです。Claude CodeやCodexなどのAIでツールやページを作るうちに、「機能は作れるのに、動きだけが思い通りにならない」という壁にぶつかりました。</p>
+      <p style="margin-top:12px;">そこで、欲しかった動きを色・寸法・アニメーションの時間まで実測して書き起こし、AIにそのまま渡せる「設計図」という形にしました。別のAIでの再現テストも済ませた、検証済みの仕様です。</p>
+    </div>
+  </section>
+
+  <section class="sec">
+    <h2>こんなモヤモヤに。</h2>
+    <p class="lead">AIでページを作る人が、いちばん詰まるのは「動き」でした。</p>
+    <div class="why">
+      <div class="card">
+        <div class="num">1</div>
+        <div>
+          <div class="pain">「機能は作れた。でも、なんだか安っぽく見える」</div>
+          <div class="chg">→ 動きの数値まで決まった設計図で、そのまま再現できます</div>
+          <p>浮く・ずれる・吸い付く。気持ちよさの正体は、寸法と時間の設計でした。</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="num">2</div>
+        <div>
+          <div class="pain">「アニメーションを考える時間がない」</div>
+          <div class="chg">→ 考えるのは終わっています。AIに渡すだけです</div>
+          <p>設計図には、AIへの適用プロンプトまで入っています。</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="num">3</div>
+        <div>
+          <div class="pain">「何から試せばいいか分からない」</div>
+          <div class="chg">→ まず無料サンプルで、自分のページで試せます</div>
+          <p>タスク管理の完了モーションと、アイコンの2モーションを無料で配っています。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="products">
+    <h2>設計図の商品。</h2>
+    <p class="lead">BOOTHで販売・配布しています。どちらも別のAIで再現テスト済みの、検証済み設計です。</p>
+    <div class="products">
+      <div class="card">
+        <div>
+          <h3>そのページ、動きで損してます。<br>カンバンダッシュボード完全設計図 <span class="chip chip-paid">有料</span></h3>
+          <p class="desc">カードのドラッグ＆ドロップ（浮く／隙間が開く／吸い付く）に、追加・削除・完了バナー、数値連動までを収録。</p>
+        </div>
+        <div class="side">
+          <div class="price"><s>¥4,980</s>¥3,980</div>
+          <div class="note">発売記念価格（最初の10件まで）</div><br>
+          <a class="btn btn-navy" href="https://ugokilab.booth.pm/items/9059824">BOOTHで見る</a>
+        </div>
+      </div>
+      <div class="card">
+        <div>
+          <h3>そのアイコン、静止画で損してます。<br>アニメーションアイコン全12モーション設計図 <span class="chip chip-paid">有料</span></h3>
+          <p class="desc">描画、塗りモーフ、歯車の段階回転、封筒の開閉など、UIアイコンの動き12種をまとめて収録。</p>
+        </div>
+        <div class="side">
+          <div class="price"><s>¥4,980</s>¥3,980</div>
+          <div class="note">発売記念価格（最初の10件まで）</div><br>
+          <a class="btn btn-navy" href="https://ugokilab.booth.pm/items/9064837">BOOTHで見る</a>
+        </div>
+      </div>
+      <div class="card">
+        <div>
+          <h3>タスク管理の完了モーション設計図 <span class="chip chip-free">無料</span></h3>
+          <p class="desc">チェックが描かれ、取り消し線が走り、進捗が数値とバーで動く。まず試したい人向けの無料サンプル。</p>
+        </div>
+        <div class="side">
+          <div class="price">¥0</div><br>
+          <a class="btn btn-navy" href="https://ugokilab.booth.pm/items/9060714">BOOTHで受け取る</a>
+        </div>
+      </div>
+      <div class="card">
+        <div>
+          <h3>アニメーションアイコン設計図（Draw／Gear） <span class="chip chip-free">無料</span></h3>
+          <p class="desc">線が描かれるチェックと、段階回転する歯車。アイコン編の無料サンプルです。</p>
+        </div>
+        <div class="side">
+          <div class="price">¥0</div><br>
+          <a class="btn btn-navy" href="https://ugokilab.booth.pm/items/9064853">BOOTHで受け取る</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <h2>設計図の使い方。</h2>
+    <p class="lead">むずかしい準備はいりません。3ステップだけです。</p>
+    <div class="steps">
+      <div class="card">
+        <span class="num">1</span>
+        <h3>見本で動きを確認</h3>
+        <p>商品に付属の見本ページで、完成形の動きをそのまま見られます。</p>
+      </div>
+      <div class="card">
+        <span class="num">2</span>
+        <h3>設計図をAIに渡す</h3>
+        <p>設計図ファイルと同梱のプロンプトを、Claude CodeやCodexに渡します。</p>
+      </div>
+      <div class="card">
+        <span class="num">3</span>
+        <h3>自分のページで再現</h3>
+        <p>色・寸法・時間が数値で決まっているので、自分のページでも同じ動きになります。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <h2>AIで作ったもの。</h2>
+    <p class="lead">設計図のもとになった、実践の記録です。</p>
+    <div class="tools">
+      <div class="row"><div><b>タスク管理ツール</b><span>設計図の題材にもなった、カンバン式のタスク管理</span></div><span class="chip chip-done">完成</span></div>
+      <div class="row"><div><b>家計簿ツール</b><span>毎月の収支をまとめる自作ツール</span></div><span class="chip chip-done">完成</span></div>
+      <div class="row"><div><b>営業CRM</b><span>営業の進捗を管理するツール</span></div><span class="chip chip-done">完成</span></div>
+      <div class="row"><div><b>ニュース収集・要約ツール</b><span>集めて、要約して、読みやすく</span></div><span class="chip chip-done">完成</span></div>
+      <div class="row"><div><b>Threads自動化ツール</b><span>発信の運用を助けるツール</span></div><span class="chip chip-wip">制作中</span></div>
+      <div class="row"><div><b>会社用CRM</b><span>業務向けに拡張中</span></div><span class="chip chip-wip">制作中</span></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <h2>リンク。</h2>
+    <div class="links">
+      <a href="https://lin.ee/vWNKtBL"><div><b>LINE公式アカウント</b><br><span>無料サンプルの受け取りはこちら</span></div><span class="arrow">→</span></a>
+      <a href="https://www.instagram.com/ugokilab/"><div><b>Instagram</b><br><span>@ugokilab｜動きの実例を投稿しています</span></div><span class="arrow">→</span></a>
+      <a href="https://www.threads.com/@ugokilab"><div><b>Threads</b><br><span>@ugokilab｜制作の過程を発信しています</span></div><span class="arrow">→</span></a>
+      <a href="https://ugokilab.booth.pm"><div><b>BOOTH｜ウゴキラボ</b><br><span>設計図の販売・無料配布はこちら</span></div><span class="arrow">→</span></a>
+    </div>
+  </section>
+
+  <div class="final">
+    <h2>まず、無料で試せます。</h2>
+    <p>設計図の使い心地は、自分のページで動かしてみるのがいちばん早いです。</p>
+    <a class="btn btn-line" href="https://lin.ee/vWNKtBL">LINEで無料サンプルを受け取る</a>
+  </div>
+
+  <footer>ウゴキラボ ｜ UGOKILAB</footer>
+</div>
+
+</body>
+</html>

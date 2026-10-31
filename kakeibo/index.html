@@ -490,7 +490,7 @@ body.drag-active{overflow:hidden}
 
   <!-- ボード -->
   <div id="board-sec" class="layout">
-    <main class="board" id="board" aria-label="家計簿ボード"></main>
+    <main class="board" id="kanban-board" aria-label="家計簿ボード"></main>
     <aside class="sidebar">
       <section class="widget">
         <h2>精算済み金額</h2><p class="note">カテゴリごとの精算済み合計（円）</p>
@@ -666,7 +666,7 @@ const $ = s => document.querySelector(s);
 function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){} }
 
 /* ================= ボード構築 ================= */
-const board = $("#board");
+const board = $("#kanban-board");
 COLS.forEach(col => {
   const sec = document.createElement("section");
   sec.className = "column"; sec.dataset.col = col.id; sec.style.setProperty("--accent", col.accent);
@@ -946,12 +946,17 @@ $("#pl-btn").addEventListener("click", () => {
 
 /* ================= ナビ 01 Slide Pill（公開版：タブ切替） ================= */
 const TAB_PANELS = {board:"panel-board", list:"list-sec", analysis:"analysis-sec", settings:"settings-sec"};
+/* 有効なタブ名は TAB_PANELS の所有プロパティだけ（#constructor などの継承プロパティを除外） */
+const isTab = name => Object.prototype.hasOwnProperty.call(TAB_PANELS, name);
+let currentTab = "board";
 function showTab(name, pushHash){
-  if (!TAB_PANELS[name]) name = "board";
+  if (!isTab(name)) name = "board";
+  if (name !== "board") cancelPendingAdd();
   document.querySelectorAll(".sp-items .it").forEach(b => {
     const on = b.dataset.tab === name;
     b.classList.toggle("on", on);
     b.setAttribute("aria-selected", on ? "true" : "false");
+    b.tabIndex = on ? 0 : -1;
     if (on) $("#sp-ind").style.transform = `translateX(${+b.dataset.nav * 84}px)`;
   });
   Object.entries(TAB_PANELS).forEach(([k, id]) => document.getElementById(id).classList.toggle("active", k === name));
@@ -960,17 +965,37 @@ function showTab(name, pushHash){
     const blob = $("#lt-blob");
     blob.style.transition = "none"; moveLiquid(); void blob.offsetWidth; blob.style.transition = "";
   }
-  if (pushHash && location.hash !== "#" + name) history.pushState(null, "", "#" + name);
+  currentTab = name;
+  /* 表示中のタブと同じなら履歴を増やさない（ハッシュなし・無効なハッシュはボード扱い） */
+  if (pushHash && tabFromHash() !== name) history.pushState(null, "", "#" + name);
 }
 document.querySelectorAll(".sp-items .it").forEach(btn => btn.addEventListener("click", () => showTab(btn.dataset.tab, true)));
 /* 上部ツールバー（Hop）のリンクもタブ切替に */
 document.querySelectorAll("a[data-tab]").forEach(a => a.addEventListener("click", e => { e.preventDefault(); showTab(a.dataset.tab, true); }));
-function tabFromHash(){ const h = location.hash.replace("#", ""); return TAB_PANELS[h] ? h : "board"; }
+function tabFromHash(){ const h = location.hash.slice(1); return isTab(h) ? h : "board"; }
+/* キーボード操作：左右矢印（端で循環）／Home／End でタブを移動して選択 */
+$(".sp-items").addEventListener("keydown", e => {
+  const tabs = [...document.querySelectorAll(".sp-items .it")];
+  const i = tabs.indexOf(e.target.closest(".it"));
+  if (i < 0) return;
+  let next;
+  if (e.key === "ArrowRight") next = (i + 1) % tabs.length;
+  else if (e.key === "ArrowLeft") next = (i - 1 + tabs.length) % tabs.length;
+  else if (e.key === "Home") next = 0;
+  else if (e.key === "End") next = tabs.length - 1;
+  else return;
+  e.preventDefault();
+  showTab(tabs[next].dataset.tab, true);
+  tabs[next].focus();
+});
 window.addEventListener("popstate", () => showTab(tabFromHash(), false));
 window.addEventListener("hashchange", () => showTab(tabFromHash(), false));
 
 /* ================= ナビ 03 Center Action ================= */
 const caBtn = $("#ca-btn"), caFan = $("#ca-fan");
+/* フォーム表示の予約：別タブへ移動したら取り消し、連続選択では最後の1件だけ実行 */
+let pendingAdd = null;
+function cancelPendingAdd(){ if (pendingAdd !== null) { clearTimeout(pendingAdd); pendingAdd = null; } }
 caBtn.addEventListener("click", () => {
   caBtn.classList.add("press");
   setTimeout(() => caBtn.classList.remove("press"), 180);
@@ -982,7 +1007,12 @@ document.querySelectorAll(".ca-fan .f").forEach(f => f.addEventListener("click",
   const firstBody = board.querySelector(`.column[data-col="todo"] .col-body`);
   showTab("board", true);
   document.getElementById("board-sec").scrollIntoView({behavior:"smooth"});
-  setTimeout(() => openAddForm(firstBody, f.dataset.add), 350);
+  cancelPendingAdd();
+  pendingAdd = setTimeout(() => {
+    pendingAdd = null;
+    if (currentTab !== "board" || !document.getElementById("panel-board").classList.contains("active")) return;
+    openAddForm(firstBody, f.dataset.add);
+  }, 350);
 }));
 
 /* ================= 設定ボタン ================= */

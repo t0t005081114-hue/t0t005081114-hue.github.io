@@ -513,12 +513,12 @@ body.drag-active{overflow:hidden}
   <nav class="sp-nav glass" aria-label="セクション切替">
     <!-- ナビ 03 Center Action（バー中央に統合） -->
     <div class="ca-wrap">
-      <div class="ca-fan" id="ca-fan">
+      <button class="ca-btn" id="ca-btn" aria-label="追加メニュー" aria-controls="ca-fan" aria-expanded="false"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+      <div class="ca-fan" id="ca-fan" inert>
         <button tabindex="-1" class="f f1" data-add="expense"><svg class="ic" viewBox="0 0 24 24"><path d="M4 8h3l2-2.5h6L17 8h3a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z"/><circle cx="12" cy="13.5" r="3.4"/></svg><small>支出</small></button>
         <button tabindex="-1" class="f f2" data-add="fixed"><svg class="ic" viewBox="0 0 24 24"><path d="M12 20.5C6 16.5 3.5 13.3 3.5 9.9 3.5 7.2 5.6 5 8.2 5c1.5 0 3 .8 3.8 2 .8-1.2 2.3-2 3.8-2C18.4 5 20.5 7.2 20.5 9.9c0 3.4-2.5 6.6-8.5 10.6z"/></svg><small>固定費</small></button>
         <button tabindex="-1" class="f f3" data-add="memo"><svg class="ic" viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 016.5 4h11A2.5 2.5 0 0120 6.5v7a2.5 2.5 0 01-2.5 2.5H12l-4.5 4v-4H6.5A2.5 2.5 0 014 13.5v-7z"/></svg><small>メモ</small></button>
       </div>
-      <button class="ca-btn" id="ca-btn" aria-label="追加メニュー"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
     </div>
     <div class="sp-ind" id="sp-ind"></div>
     <div class="sp-items" role="tablist" aria-label="表示の切り替え">
@@ -1070,16 +1070,22 @@ const caBtn = $("#ca-btn"), caFan = $("#ca-fan");
 /* フォーム表示の予約：別タブへ移動したら取り消し、連続選択では最後の1件だけ実行 */
 let pendingAdd = null;
 function cancelPendingAdd(){ if (pendingAdd !== null) { clearTimeout(pendingAdd); pendingAdd = null; } }
+/* 扇の開閉：見た目・aria-expanded・inert・tabindex を同期 */
+function setFanOpen(open){
+  caFan.classList.toggle("open", open);
+  caBtn.classList.toggle("open", open);
+  caBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  caFan.inert = !open;
+  caFan.querySelectorAll(".f").forEach(f => f.tabIndex = open ? 0 : -1);
+}
 caBtn.addEventListener("click", () => {
   caBtn.classList.add("press");
   setTimeout(() => caBtn.classList.remove("press"), 180);
-  const open = caFan.classList.toggle("open");
-  caBtn.classList.toggle("open", open);
-  caFan.querySelectorAll(".f").forEach(f => f.tabIndex = open ? 0 : -1);
+  setFanOpen(!caFan.classList.contains("open"));
 });
 document.querySelectorAll(".ca-fan .f").forEach(f => f.addEventListener("click", () => {
-  caFan.classList.remove("open"); caBtn.classList.remove("open");
-  caFan.querySelectorAll(".f").forEach(x => x.tabIndex = -1);
+  if (caFan.contains(document.activeElement)) caBtn.focus({preventScroll:true});   /* 閉じる扇の中にフォーカスを残さない */
+  setFanOpen(false);
   const firstBody = board.querySelector(`.column[data-col="todo"] .col-body`);
   showTab("board", true);
   document.getElementById("board-sec").scrollIntoView({behavior:"smooth"});

@@ -351,6 +351,7 @@ details.past summary{min-height:44px;display:flex;align-items:center;font-weight
         <div class="set-row"><span class="lbl">書き出し</span><button class="btn btn-ghost" id="export">JSONで保存</button></div>
         <div class="set-row"><span class="lbl">サンプルに戻す</span><button class="btn btn-ghost" id="reset-sample">サンプルデータに戻す</button></div>
         <div class="set-row"><span class="lbl">すべて消す</span><button class="btn btn-warn" id="wipe">全データ削除</button></div>
+        <p class="small" id="data-lock" role="note" hidden style="margin:8px 0 0"></p>
       </section>
 
       <section class="card privacy" aria-labelledby="pv-h">
@@ -503,69 +504,107 @@ function sampleState(){
 const BACKUP_KEY = KEY + "-backup";   /* 修復前の元データの退避先（1件だけ。既にあれば上書きしない） */
 const isObj = v => v !== null && typeof v === "object" && !Array.isArray(v);
 const isTime = v => typeof v === "string" && v !== "" && !isNaN(Date.parse(v));
+/* 列挙値は「文字列で、許可リストに入っている」ものだけ（constructor・配列・オブジェクトなどは不可） */
+const oneOf = (v, list) => typeof v === "string" && list.includes(v);
 const TYPES = ["create", "assign", "due", "complete", "undo"];
-/* 返り値：{state, issues}。issues が空なら元データのまま */
+const KIND_KEYS = ["procedure", "general", "supply"], NOTIFY_KEYS = ["instant", "digest", "off"];
+const REPEATS = ["none", "daily", "weekly"], SLOTS = ["day", "tonight"], CHILD_KINDS = ["birth", "due"];
+/* ID：アプリが作るID（m1・s1・m+英数字・英数字）と互換の形式だけ */
+const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
+const isId = v => typeof v === "string" && ID_RE.test(v);
+/* JSONとしての同一判定（オブジェクトのキーの順番は無視、配列は順番どおり） */
+function sameJSON(a, b){
+  if (a === b) return true;
+  if (a === null || b === null || typeof a !== "object" || typeof b !== "object") return false;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  if (Array.isArray(a)) return a.length === b.length && a.every((x, i) => sameJSON(x, b[i]));
+  const ka = Object.keys(a), kb = Object.keys(b);
+  return ka.length === kb.length && ka.every(k => Object.prototype.hasOwnProperty.call(b, k) && sameJSON(a[k], b[k]));
+}
+/* 同じIDが1回だけなら引き継ぎ、重複・不正なら新しいIDにする。
+   返り値：{map：元ID → 新ID（参照先を一意に決められないときは null）, ids：各要素の新ID}。元データは書き換えない */
+function reassignIds(list, make, taken){
+  const count = new Map();
+  list.forEach(x => { if (typeof x.id === "string") count.set(x.id, (count.get(x.id) || 0) + 1); });
+  const map = new Map(), ids = [], fresh = () => { let id; do { id = make(); } while (taken.has(id)); return id; };
+  list.forEach(x => {
+    const old = x.id, unique = typeof old === "string" && count.get(old) === 1;
+    const id = unique && isId(old) && !taken.has(old) ? old : fresh();
+    taken.add(id);
+    if (typeof old === "string") map.set(old, unique ? id : null);
+    ids.push(id);
+  });
+  return {map, ids};
+}
+/* 返り値：{state, changed, count}。changed が false なら元データと完全に同じ内容 */
 function sanitize(raw){
-  const issues = [], note = m => issues.push(m);
+  let notes = 0; const note = () => { notes++; };
   if (!isObj(raw)) throw new Error("root");
   const s = {version:1, onboarded:raw.onboarded !== false, members:[], child:{date:null, kind:"birth"}, tasks:[], events:[], settings:defaultSettings()};
-  if (raw.version !== 1) note("version");
-  if (typeof raw.onboarded !== "boolean") note("onboarded");
-  /* メンバー：id 重複なし・名前必須・最大4人・ドットの形は重複なし */
-  const ids = new Set(), styles = new Set();
-  (Array.isArray(raw.members) ? raw.members : (note("members"), [])).forEach(m => {
-    if (!isObj(m) || typeof m.id !== "string" || !m.id || ids.has(m.id) || typeof m.name !== "string" || !m.name.trim() || s.members.length >= MAX_MEMBERS) { note("member"); return; }
-    let style = Number.isInteger(m.style) && m.style >= 0 && m.style <= 3 && !styles.has(m.style) ? m.style : null;
-    if (style === null) { style = [0, 1, 2, 3].find(x => !styles.has(x)); note("member.style"); }
-    const name = m.name.trim().slice(0, 12), role = typeof m.role === "string" ? m.role.slice(0, 24) : (note("member.role"), "");
-    if (name !== m.name || role !== m.role) note("member.text");
-    ids.add(m.id); styles.add(style);
-    s.members.push({id:m.id, name, role, style});
+  if (raw.version !== 1 || typeof raw.onboarded !== "boolean") note();
+  /* メンバー：名前必須・最大4人 */
+  const rawM = (Array.isArray(raw.members) ? raw.members : (note(), [])).filter(m => {
+    const ok = isObj(m) && typeof m.name === "string" && m.name.trim() !== ""; if (!ok) note(); return ok;
   });
-  if (!s.members.length) { s.members = defaultMembers(); note("members.empty"); }
+  if (rawM.length > MAX_MEMBERS) { rawM.length = MAX_MEMBERS; note(); }
+  const {map:mMap, ids:mIds} = reassignIds(rawM, () => "m" + uid(), new Set());
+  const styles = new Set();
+  rawM.forEach((m, i) => {
+    let style = Number.isInteger(m.style) && m.style >= 0 && m.style <= 3 && !styles.has(m.style) ? m.style : null;
+    if (style === null) { style = [0, 1, 2, 3].find(x => !styles.has(x)); note(); }
+    styles.add(style);
+    s.members.push({id:mIds[i], name:m.name.trim().slice(0, 12), role:typeof m.role === "string" ? m.role.slice(0, 24) : "", style});
+  });
+  if (!s.members.length) { s.members = defaultMembers(); note(); }
+  /* 参照：一意に決まる元IDだけ新IDへ。決まらない・存在しないものは null */
+  const resolveMember = id => (typeof id === "string" && mMap.has(id)) ? mMap.get(id) : null;
   /* 子ども */
-  const c = isObj(raw.child) ? raw.child : (note("child"), {});
-  s.child.kind = c.kind === "due" ? "due" : "birth"; if (c.kind !== s.child.kind) note("child.kind");
-  s.child.date = isDate(c.date) ? c.date : null; if (c.date != null && !s.child.date) note("child.date");
+  const c = isObj(raw.child) ? raw.child : (note(), {});
+  s.child.kind = oneOf(c.kind, CHILD_KINDS) ? c.kind : "birth";
+  s.child.date = isDate(c.date) ? c.date : null;
   /* 設定 */
-  const st = isObj(raw.settings) ? raw.settings : (note("settings"), {});
-  s.settings.actorId = s.members.some(m => m.id === st.actorId) ? st.actorId : (note("settings.actor"), s.members[0].id);
-  const nt = isObj(st.notify) ? st.notify : (note("settings.notify"), {});
-  Object.keys(KINDS).forEach(k => { if (NOTIFY[nt[k]]) s.settings.notify[k] = nt[k]; else note("settings.notify." + k); });
-  /* タスク */
-  const tids = new Set(), nowIso = new Date().toISOString();
-  (Array.isArray(raw.tasks) ? raw.tasks : (note("tasks"), [])).forEach(t => {
-    if (!isObj(t) || typeof t.title !== "string" || !t.title.trim()) { note("task"); return; }
-    let id = typeof t.id === "string" && t.id && !tids.has(t.id) ? t.id : (note("task.id"), uid());
-    while (tids.has(id)) id = uid();
-    tids.add(id);
-    const x = {id, title:t.title.trim().slice(0, 60), assigneeId:null, due:null, repeat:"none", kind:"general", tpl:null, done:t.done === true, doneAt:null,
+  const st = isObj(raw.settings) ? raw.settings : (note(), {});
+  s.settings.actorId = resolveMember(st.actorId) || s.members[0].id;
+  const nt = isObj(st.notify) ? st.notify : (note(), {});
+  KIND_KEYS.forEach(k => { if (oneOf(nt[k], NOTIFY_KEYS)) s.settings.notify[k] = nt[k]; else note(); });
+  /* タスク：タイトル必須 */
+  const rawT = (Array.isArray(raw.tasks) ? raw.tasks : (note(), [])).filter(t => {
+    const ok = isObj(t) && typeof t.title === "string" && t.title.trim() !== ""; if (!ok) note(); return ok;
+  });
+  const {map:tMap, ids:tIds} = reassignIds(rawT, uid, new Set());
+  const nowIso = new Date().toISOString();
+  rawT.forEach((t, i) => {
+    const x = {id:tIds[i], title:t.title.trim().slice(0, 60), assigneeId:null, due:null, repeat:"none", kind:"general", tpl:null, done:t.done === true, doneAt:null,
       createdAt:isTime(t.createdAt) ? t.createdAt : nowIso, updatedAt:isTime(t.updatedAt) ? t.updatedAt : nowIso};
-    if (x.title !== t.title || typeof t.done !== "boolean" || !isTime(t.createdAt) || !isTime(t.updatedAt)) note("task.fields");
-    if (t.assigneeId != null) { if (s.members.some(m => m.id === t.assigneeId)) x.assigneeId = t.assigneeId; else note("task.assignee"); }
-    if (t.due != null) {
-      if (isObj(t.due) && isDate(t.due.date)) { x.due = {date:t.due.date, slot:t.due.slot === "tonight" ? "tonight" : "day"}; if (t.due.slot !== x.due.slot) note("task.slot"); }
-      else note("task.due");
-    }
-    x.repeat = ["none", "daily", "weekly"].includes(t.repeat) ? t.repeat : (note("task.repeat"), "none");
-    x.kind = KINDS[t.kind] ? t.kind : (note("task.kind"), "general");
-    x.tpl = typeof t.tpl === "string" ? t.tpl : (t.tpl != null && note("task.tpl"), null);
-    if (x.done) { x.doneAt = isTime(t.doneAt) ? t.doneAt : x.updatedAt; if (x.repeat !== "none") { x.repeat = "none"; note("task.doneRepeat"); } }
-    if (x.repeat !== "none" && !x.due) { x.due = {date:todayStr(), slot:"day"}; note("task.repeatDue"); }  /* 繰り返しには期限が必須 */
+    if (t.assigneeId != null) x.assigneeId = resolveMember(t.assigneeId);
+    if (isObj(t.due) && isDate(t.due.date)) x.due = {date:t.due.date, slot:oneOf(t.due.slot, SLOTS) ? t.due.slot : "day"};
+    x.repeat = oneOf(t.repeat, REPEATS) ? t.repeat : "none";
+    x.kind = oneOf(t.kind, KIND_KEYS) ? t.kind : "general";
+    x.tpl = isId(t.tpl) ? t.tpl : null;
+    if (x.done) { x.doneAt = isTime(t.doneAt) ? t.doneAt : x.updatedAt; x.repeat = "none"; }   /* 完了済みは繰り返さない */
+    if (x.repeat !== "none" && !x.due) x.due = {date:todayStr(), slot:"day"};                    /* 繰り返しには期限が必須 */
     s.tasks.push(x);
   });
-  /* 履歴：種別・時刻・タスクIDが正しいものだけ（削除済みタスクの履歴は残す） */
-  const eids = new Set();
-  (Array.isArray(raw.events) ? raw.events : (note("events"), [])).forEach(e => {
-    if (!isObj(e) || !TYPES.includes(e.type) || typeof e.taskId !== "string" || !isTime(e.at)) { note("event"); return; }
-    let id = typeof e.id === "string" && e.id && !eids.has(e.id) ? e.id : (note("event.id"), uid());
-    while (eids.has(id)) id = uid();
-    eids.add(id);
-    const ev = {id, taskId:e.taskId, type:e.type, by:typeof e.by === "string" ? e.by : "", byName:typeof e.byName === "string" ? e.byName : "", at:e.at, title:typeof e.title === "string" ? e.title : ""};
+  /* 履歴：種別・時刻・タスクIDがあるものだけ。削除済みのタスク・メンバーの履歴は残す */
+  const rawE = (Array.isArray(raw.events) ? raw.events : (note(), [])).filter(e => {
+    const ok = isObj(e) && oneOf(e.type, TYPES) && typeof e.taskId === "string" && isTime(e.at); if (!ok) note(); return ok;
+  });
+  const eIds = reassignIds(rawE, uid, new Set()).ids;
+  const taskIds = new Set(s.tasks.map(t => t.id));
+  rawE.forEach((e, i) => {
+    let taskId;
+    if (tMap.has(e.taskId)) taskId = tMap.get(e.taskId) || ("x" + uid());   /* 重複で決まらない → どのタスクにも付けない */
+    else taskId = isId(e.taskId) && !taskIds.has(e.taskId) ? e.taskId : ("x" + uid());
+    let by;
+    if (typeof e.by === "string" && mMap.has(e.by)) by = mMap.get(e.by) || "";   /* 重複で決まらない → 名前の控え（byName）で表示 */
+    else by = isId(e.by) ? e.by : "";
+    const ev = {id:eIds[i], taskId, type:e.type, by, byName:typeof e.byName === "string" ? e.byName : "", at:e.at, title:typeof e.title === "string" ? e.title : ""};
     if (e.type === "assign" || e.type === "due") { ev.from = typeof e.from === "string" ? e.from : ""; ev.to = typeof e.to === "string" ? e.to : ""; }
     s.events.push(ev);
   });
-  return {state:s, issues};
+  /* 判定は「補正後が元と完全に同じか」で行う（記録漏れの補正も必ず検出する） */
+  const changed = !sameJSON(raw, s);
+  return {state:s, changed, count:changed ? Math.max(notes, 1) : 0};
 }
 /* 起動時の読み込み。修復が必要なときは、元データを退避してから使う */
 let persistBlocked = false;      /* true の間は保存しない（元データを守るため） */
@@ -576,7 +615,7 @@ function load(){
   if (raw === null) return sampleState();             /* はじめての表示 */
   let result = null, reason = "";
   try { result = sanitize(JSON.parse(raw)); } catch (e) { reason = "broken"; }
-  if (result && !result.issues.length) return result.state;
+  if (result && !result.changed) return result.state;
   if (result) reason = "repaired";
   /* 元データを退避。既に別の退避があれば上書きせず、保存を止める */
   let backedUp = false;
@@ -585,7 +624,7 @@ function load(){
     if (prev === null || prev === raw) { localStorage.setItem(BACKUP_KEY, raw); backedUp = localStorage.getItem(BACKUP_KEY) === raw; }
   } catch (e) { backedUp = false; }
   persistBlocked = !backedUp || reason === "broken";   /* 読めないデータは、利用者が選ぶまで保存しない */
-  recovery = {raw, backedUp, reason, issues:result ? result.issues.length : 0};
+  recovery = {raw, backedUp, reason, issues:result ? result.count : 0};
   if (result) return result.state;
   const s = sampleState(); s.onboarded = true; return s;   /* 読めないデータは表示だけサンプル（元データは退避済み／保存停止） */
 }
@@ -710,12 +749,12 @@ function taskRow(t, opt = {}){
   const dl = dueLabel(t, opt.onDate);
   const canCheck = !t.done && opt.check !== false;
   const lead = t.done ? `<span class="done-mark">完了</span>`
-    : canCheck ? `<button class="chk" data-act="complete" data-id="${t.id}" data-due="${t.due ? t.due.date : ""}" aria-label="「${esc(t.title)}」を完了にする"><span class="box"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></button>`
+    : canCheck ? `<button class="chk" data-act="complete" data-id="${esc(t.id)}" data-due="${t.due ? esc(t.due.date) : ""}" aria-label="「${esc(t.title)}」を完了にする"><span class="box"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></button>`
     : `<span class="done-mark" aria-hidden="true">↻</span>`;
   const rep = t.repeat === "daily" ? `<span class="rep">毎日</span>` : t.repeat === "weekly" ? `<span class="rep">毎週</span>` : "";
-  return `<li class="task${dl.late ? " overdue" : ""}${t.done ? " done" : ""}" data-row="${t.id}">
+  return `<li class="task${dl.late ? " overdue" : ""}${t.done ? " done" : ""}" data-row="${esc(t.id)}">
     ${opt.rank ? `<span class="rank" aria-hidden="true">${opt.rank}</span>` : ""}${lead}
-    <button class="tbody" data-act="edit" data-id="${t.id}" aria-label="「${esc(t.title)}」を編集（${esc(dl.text)}、担当 ${esc(memberName(t.assigneeId))}）">
+    <button class="tbody" data-act="edit" data-id="${esc(t.id)}" aria-label="「${esc(t.title)}」を編集（${esc(dl.text)}、担当 ${esc(memberName(t.assigneeId))}）">
       <span class="ttl">${esc(t.title)}</span>
       <span class="meta" aria-hidden="true">${whoChip(t.assigneeId)}<span class="due${dl.late ? " late" : ""}">${esc(dl.text)}</span>${rep}${opt.onDate && t.repeat !== "none" && opt.check === false ? `<span>（くり返しの予定）</span>` : ""}</span>
     </button></li>`;
@@ -793,7 +832,7 @@ function renderSchedule(){
     ? list.map(x => taskRow(x, {onDate:selDate, check:x.repeat === "none" || x.due.date === selDate})).join("")
     : `<li class="empty">この日のタスクはありません。</li>`;
 }
-$("#strip").addEventListener("click", e => { const b = e.target.closest("[data-day]"); if (!b) return; selDate = b.dataset.day; renderSchedule(); $(`[data-day="${selDate}"]`).focus(); });
+$("#strip").addEventListener("click", e => { const b = e.target.closest("[data-day]"); if (!b) return; selDate = b.dataset.day; renderSchedule(); $(`[data-day="${CSS.escape(selDate)}"]`).focus(); });
 $("#week-prev").addEventListener("click", () => { weekStart = addDays(weekStart, -7); selDate = addDays(selDate, -7); renderSchedule(); });
 $("#week-next").addEventListener("click", () => { weekStart = addDays(weekStart, 7); selDate = addDays(selDate, 7); renderSchedule(); });
 $("#week-today").addEventListener("click", () => { weekStart = selDate = todayStr(); renderSchedule(); });
@@ -814,7 +853,7 @@ function renderFamily(){
   }).join("");
   /* 引き継ぎの選択肢 */
   const from = $("#ho-from"), to = $("#ho-to"), fv = from.value, tv = to.value;
-  const opts = state.members.map(m => `<option value="${m.id}">${esc(m.name)}</option>`).join("");
+  const opts = state.members.map(m => `<option value="${esc(m.id)}">${esc(m.name)}</option>`).join("");
   from.innerHTML = opts; to.innerHTML = opts;
   if (member(fv)) from.value = fv;
   to.value = member(tv) && tv !== from.value ? tv : (state.members.find(m => m.id !== from.value) || {}).id || "";
@@ -854,15 +893,15 @@ function renderSettings(){
   $$("[data-child-kind]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.childKind === c.kind)));
   $("#child-date").value = c.date || "";
   $("#child-status").textContent = c.date ? `${c.kind === "due" ? "出産予定日" : "誕生日"}：${mdw(c.date).replace(/^/, parseD(c.date).getFullYear() + "年")}　${ageText()}` : "未登録です。登録すると月齢の表示と、育児テンプレートの期限の自動計算が使えます。";
-  $("#mem-edit").innerHTML = state.members.map(m => `<div class="mem-edit" data-mid="${m.id}">
+  $("#mem-edit").innerHTML = state.members.map(m => `<div class="mem-edit" data-mid="${esc(m.id)}">
       <span class="dot s${m.style}" aria-hidden="true"></span>
       <input type="text" class="name-in" value="${esc(m.name)}" maxlength="12" aria-label="${esc(m.name)}の名前">
       <input type="text" class="role-in" value="${esc(m.role)}" maxlength="24" placeholder="役割メモ（例：手続き担当）" aria-label="${esc(m.name)}の役割メモ">
-      <button class="btn btn-ghost" data-mem-del="${m.id}" aria-label="${esc(m.name)}を削除" ${state.members.length <= 1 ? "disabled" : ""}>削除</button>
+      <button class="btn btn-ghost" data-mem-del="${esc(m.id)}" aria-label="${esc(m.name)}を削除" ${state.members.length <= 1 ? "disabled" : ""}>削除</button>
     </div>`).join("");
   $("#mem-add").disabled = state.members.length >= MAX_MEMBERS;
   $("#mem-note").textContent = `${state.members.length} / ${MAX_MEMBERS}人`;
-  $("#actor").innerHTML = state.members.map(m => `<option value="${m.id}">${esc(m.name)}</option>`).join("");
+  $("#actor").innerHTML = state.members.map(m => `<option value="${esc(m.id)}">${esc(m.name)}</option>`).join("");
   $("#actor").value = actor().id;
   $("#ntf").innerHTML = Object.entries(KINDS).map(([k, lbl]) => `<div class="set-row"><span class="lbl" id="ntf-${k}">${lbl}</span>
     <div class="radios" role="group" aria-labelledby="ntf-${k}">${Object.entries(NOTIFY).map(([v, t]) => `<button class="chip" data-ntf="${k}" data-lv="${v}" aria-pressed="${state.settings.notify[k] === v}">${t}</button>`).join("")}</div></div>`).join("");
@@ -893,7 +932,7 @@ $("#mem-add").addEventListener("click", () => {
   const id = "m" + uid();
   state.members.push({id, name:`メンバー${state.members.length + 1}`, role:"", style});
   save(); renderAll(); renderSettings();
-  const inp = $(`[data-mid="${id}"] .name-in`); inp.focus(); inp.select();
+  const inp = $(`[data-mid="${CSS.escape(id)}"] .name-in`); inp.focus(); inp.select();
 });
 $("#actor").addEventListener("change", e => { state.settings.actorId = e.target.value; save(); });
 $("#ntf").addEventListener("click", e => {
@@ -913,6 +952,7 @@ $("#export").addEventListener("click", () => downloadText(JSON.stringify(state, 
 /* 保存データの修復のお知らせ（元データの書き出しは、既存の書き出しと同じ方法） */
 function renderRecovery(){
   const box = $("#recover");
+  renderDataLock();
   if (!recovery) { box.hidden = true; return; }
   const r = recovery;
   let msg, ok;
@@ -942,16 +982,35 @@ $("#recover-ok").addEventListener("click", async () => {
   recovery = null; renderRecovery();
   $(".tab-panel.active h1").focus();
 });
-$("#reset-sample").addEventListener("click", async () => {
-  if (!await confirmDialog("いまのタスクとメンバーを消して、サンプルデータに戻します。よろしいですか？", "サンプルに戻す")) return;
-  state = sampleState(); state.onboarded = true; save(); renderAll(); renderSettings();
-  showToast("サンプルデータに戻しました");
-});
-$("#wipe").addEventListener("click", async () => {
-  if (!await confirmDialog("タスク・メンバー・履歴・子どもの日付をすべて削除します。元に戻せません。よろしいですか？", "全部削除する")) return;
-  state = emptyState(); save(); renderAll(); renderSettings();
-  showToast("すべてのデータを削除しました");
-});
+/* 保存停止中（元データ保護中）は「サンプルに戻す」「全データ削除」を使わせない */
+function lockMessage(){
+  const label = recovery && recovery.reason === "broken" ? "サンプルで使い始める" : "補正した内容で保存する";
+  return `保存データの復旧中で、いまは保存を止めています。この間は「サンプルに戻す」「全データ削除」は使えません。画面上部のお知らせで「${label}」を選んで保存を再開すると使えるようになります。`;
+}
+function renderDataLock(){
+  $("#reset-sample").disabled = $("#wipe").disabled = persistBlocked;
+  $("#data-lock").hidden = !persistBlocked;
+  $("#data-lock").textContent = persistBlocked ? lockMessage() : "";
+}
+/* 状態をまるごと入れ替える。保存できなければ元の状態に戻し、成功表示はしない */
+async function replaceState(confirmMsg, okLabel, make, doneMsg){
+  if (persistBlocked) { await confirmDialog(lockMessage(), "わかった", true); return; }
+  if (!await confirmDialog(confirmMsg, okLabel)) return;
+  if (persistBlocked) return;
+  const prev = state;
+  state = make();
+  if (!save()) {
+    state = prev; renderAll(); renderSettings();
+    await confirmDialog("保存できなかったため、何も変更していません（ブラウザの保存容量などが原因の可能性があります）。", "わかった", true);
+    return;
+  }
+  renderAll(); renderSettings();
+  showToast(doneMsg);
+}
+$("#reset-sample").addEventListener("click", () => replaceState("いまのタスクとメンバーを消して、サンプルデータに戻します。よろしいですか？", "サンプルに戻す",
+  () => { const s = sampleState(); s.onboarded = true; return s; }, "サンプルデータに戻しました"));
+$("#wipe").addEventListener("click", () => replaceState("タスク・メンバー・履歴・子どもの日付をすべて削除します。元に戻せません。よろしいですか？", "全部削除する",
+  emptyState, "すべてのデータを削除しました"));
 
 /* ================= モーダル管理（シート・確認・オンボーディング） ================= */
 const stack = [];
@@ -1079,7 +1138,7 @@ document.getElementById("main").addEventListener("click", e => {
 let editId = null, form = {assigneeId:null, due:null, repeat:"none"};
 function chipSet(sel, attr, val){ $$(sel + " [" + attr + "]").forEach(c => c.setAttribute("aria-pressed", String(c.getAttribute(attr) === String(val)))); }
 function renderAssigneeChips(){
-  $("#add-assignee").innerHTML = state.members.map(m => `<button type="button" class="chip" data-who="${m.id}" aria-pressed="false"><span class="dot s${m.style}" aria-hidden="true"></span>${esc(m.name)}</button>`).join("")
+  $("#add-assignee").innerHTML = state.members.map(m => `<button type="button" class="chip" data-who="${esc(m.id)}" aria-pressed="false"><span class="dot s${m.style}" aria-hidden="true"></span>${esc(m.name)}</button>`).join("")
     + `<button type="button" class="chip" data-who="" aria-pressed="false"><span class="dot none" aria-hidden="true"></span>未定</button>`;
   chipSet("#add-assignee", "data-who", form.assigneeId || "");
 }

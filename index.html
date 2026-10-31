@@ -124,6 +124,10 @@
     background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 20px;}
   .tools .row b{font-size:16px;}
   .tools .row span{color:var(--sub);font-size:13.5px;display:block;}
+  .tools a.row-link{color:var(--ink);text-decoration:none;transition:border-color .2s;}
+  .tools a.row-link:hover{border-color:var(--blue);}
+  .tools a.row-link b::after{content:" →";color:var(--blue);font-weight:900;}
+  .tools a.row-link .chip{white-space:nowrap;flex:none;}
   .links{display:grid;gap:12px;}
   .links a{display:flex;justify-content:space-between;align-items:center;text-decoration:none;
     background:var(--card);border:1px solid var(--line);border-radius:14px;padding:17px 22px;color:var(--ink);}
@@ -322,7 +326,7 @@
     <p class="lead">設計図のもとになった、実践の記録です。</p>
     <div class="tools">
       <div class="row"><div><b>タスク管理ツール</b><span>設計図の題材にもなった、カンバン式のタスク管理</span></div><span class="chip chip-done">完成</span></div>
-      <div class="row"><div><b>家計簿ツール</b><span>毎月の収支をまとめる自作ツール</span></div><span class="chip chip-done">完成</span></div>
+      <a class="row row-link" href="kakeibo/"><div><b>家計簿ツール</b><span>3つの設計図の動きで作った家計簿。タブ切り替えとドラッグで精算管理、ブラウザでそのまま触れます</span></div><span class="chip chip-done">公開中</span></a>
       <div class="row"><div><b>営業CRM</b><span>営業の進捗を管理するツール</span></div><span class="chip chip-done">完成</span></div>
       <div class="row"><div><b>ニュース収集・要約ツール</b><span>集めて、要約して、読みやすく</span></div><span class="chip chip-done">完成</span></div>
       <div class="row"><div><b>Threads自動化ツール</b><span>発信の運用を助けるツール</span></div><span class="chip chip-wip">制作中</span></div>

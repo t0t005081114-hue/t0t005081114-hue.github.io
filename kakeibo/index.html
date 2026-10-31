@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>家計簿｜ウゴキラボ</title>
+<meta name="description" content="カンバン／アニメーションアイコン／ナビバーの3つの設計図の動きで作った家計簿ツール。タブ切り替えとドラッグで精算管理ができます。データはブラウザ内にだけ保存されます。">
+<meta property="og:title" content="家計簿｜ウゴキラボ">
+<meta property="og:description" content="カンバン／アニメーションアイコン／ナビバーの3つの設計図の動きで作った家計簿ツール。タブ切り替えとドラッグで精算管理ができます。データはブラウザ内にだけ保存されます。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://t0t005081114-hue.github.io/kakeibo/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============ カンバン設計図 §1 デザイントークン（そのまま） ============ */
+:root{
+  --bg:#10122e; --bg2:#171a3a; --panel:#1d2044; --panel2:#232650; --panel3:#26295a;
+  --line:rgba(255,255,255,.08); --text:#f2f3ff; --muted:#a6a9c9; --muted2:#7f83ad;
+  --blue:#2f7bff; --violet:#8b5cf6; --pink:#ec4899; --teal:#14b8a6; --green:#22c55e; --orange:#f59e0b;
+  --radius:20px;
+  --out-quint:cubic-bezier(.22,1,.36,1); --spring:cubic-bezier(.34,1.45,.64,1);
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;min-height:100vh;color:var(--text);
+  font-family:"Noto Sans JP",system-ui,-apple-system,"Hiragino Kaku Gothic ProN",sans-serif;
+  background:
+    radial-gradient(700px 500px at 95% -5%, rgba(139,92,246,.38), transparent 60%),
+    radial-gradient(600px 500px at -10% 90%, rgba(47,123,255,.28), transparent 60%),
+    linear-gradient(180deg,#171a3a,#10122e 55%);
+  padding-bottom:120px}
+a{color:inherit}
+.wrap{max-width:1220px;margin:0 auto;padding:22px 20px 36px}
+
+/* ============ ヘッダー（カンバン §4） ============ */
+.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.crumb{font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--muted)}
+.crumb b{color:#c4b5fd}
+.crumb-back{display:inline-block;text-decoration:none;margin-bottom:6px}
+.crumb-back:hover{color:#c4b5fd}
+h1{font-size:32px;font-weight:800;line-height:1.15;letter-spacing:.02em;margin:6px 0}
+.sub{font-size:13px;color:var(--muted);margin:0}
+.userchip{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.04);
+  border:1px solid var(--line);border-radius:999px;padding:10px 14px 10px 10px}
+.avatar-big{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:800;
+  background:conic-gradient(from 40deg,#14b8a6,#2f7bff,#8b5cf6,#14b8a6);border:2px solid rgba(255,255,255,.25)}
+.userchip strong{display:block;font-size:14px;line-height:1.2}
+.userchip span{font-size:11px;color:var(--muted)}
+.hint{display:flex;align-items:center;gap:8px;background:#1a1d42;border:1px solid var(--line);
+  border-radius:12px;padding:10px 12px;font-size:12.5px;color:var(--muted);margin-bottom:16px}
+.hint i{width:8px;height:8px;border-radius:50%;background:#22c55e;flex:0 0 auto;box-shadow:0 0 0 5px rgba(34,197,94,.15)}
+.hint strong{color:#fff}
+
+/* ============ アイコン共通（アイコン設計図 §1：24×24 / 線1.75 / 4秒ループ） ============ */
+svg.ic{fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+/* 01 Draw */
+.drawC{stroke-dasharray:100;animation:drawC 4s linear infinite}
+@keyframes drawC{0%{stroke-dashoffset:100;opacity:1}40%{stroke-dashoffset:0}90%{stroke-dashoffset:0;opacity:1}96%{stroke-dashoffset:0;opacity:0}100%{stroke-dashoffset:100;opacity:0}}
+.drawK{stroke:#2ECC8F;stroke-dasharray:100;animation:drawK 4s linear infinite}
+@keyframes drawK{0%,46%{stroke-dashoffset:100;opacity:1}66%{stroke-dashoffset:0}90%{stroke-dashoffset:0;opacity:1}96%{stroke-dashoffset:0;opacity:0}100%{stroke-dashoffset:100;opacity:0}}
+/* 02 Fill（ハート） */
+.heartP{stroke:#FF8FAB;fill:#FF6B8A;stroke-dasharray:100;transform-box:fill-box;transform-origin:center;animation:heartA 4s ease-in-out infinite}
+@keyframes heartA{0%{stroke-dashoffset:100;fill-opacity:0;transform:scale(1);opacity:1}38%{stroke-dashoffset:0;fill-opacity:0;transform:scale(1)}56%{stroke-dashoffset:0;fill-opacity:1;transform:scale(1)}64%{transform:scale(1.16)}74%{transform:scale(1)}90%{opacity:1}96%{opacity:0}100%{stroke-dashoffset:100;fill-opacity:0;transform:scale(1);opacity:0}}
+/* 04 Bell */
+.bellwrap{position:relative;display:inline-flex}
+.bellg{transform-box:fill-box;transform-origin:50% 0%;animation:bellSwing 4s ease-in-out infinite}
+@keyframes bellSwing{0%{transform:rotate(0)}8%{transform:rotate(-16deg)}18%{transform:rotate(13deg)}28%{transform:rotate(-9deg)}38%{transform:rotate(5deg)}48%,100%{transform:rotate(0)}}
+.badge{position:absolute;top:-4px;right:-6px;min-width:17px;height:17px;border-radius:999px;background:#FF5C5C;color:#fff;
+  font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px;animation:badgePop 4s ease-out infinite}
+@keyframes badgePop{0%,50%{transform:scale(0);opacity:0}60%{transform:scale(1.3);opacity:1}68%{transform:scale(1)}90%{transform:scale(1);opacity:1}96%,100%{transform:scale(0);opacity:0}}
+/* 05 Plus→Check */
+.pcwrap{position:relative;width:22px;height:22px;flex:none}
+.pcwrap svg{position:absolute;inset:0;width:22px;height:22px}
+.plusic{stroke:#FFC65C;animation:plusSpin 4s ease-in-out infinite}
+@keyframes plusSpin{0%,30%{opacity:1;transform:rotate(0) scale(1)}46%{opacity:0;transform:rotate(90deg) scale(.6)}90%{opacity:0;transform:rotate(90deg) scale(.6)}100%{opacity:1;transform:rotate(0) scale(1)}}
+.checkP{stroke:#2ECC8F;stroke-dasharray:100;animation:checkDraw 4s linear infinite}
+@keyframes checkDraw{0%,46%{stroke-dashoffset:100;opacity:1}68%{stroke-dashoffset:0}90%{stroke-dashoffset:0;opacity:1}96%{stroke-dashoffset:0;opacity:0}100%{stroke-dashoffset:100;opacity:0}}
+/* 06 Hop */
+.hop{display:block}
+.h1{animation:hopA 4s ease-in-out infinite}.h2{animation:hopB 4s ease-in-out infinite}
+.h3{animation:hopC 4s ease-in-out infinite}.h4{animation:hopD 4s ease-in-out infinite}
+@keyframes hopA{0%,100%{transform:translateY(0)}5%{transform:translateY(-7px)}10%{transform:translateY(0)}13%{transform:translateY(-3px)}16%{transform:translateY(0)}}
+@keyframes hopB{0%,24%{transform:translateY(0)}29%{transform:translateY(-7px)}34%{transform:translateY(0)}37%{transform:translateY(-3px)}40%,100%{transform:translateY(0)}}
+@keyframes hopC{0%,48%{transform:translateY(0)}53%{transform:translateY(-7px)}58%{transform:translateY(0)}61%{transform:translateY(-3px)}64%,100%{transform:translateY(0)}}
+@keyframes hopD{0%,72%{transform:translateY(0)}77%{transform:translateY(-7px)}82%{transform:translateY(0)}85%{transform:translateY(-3px)}88%,100%{transform:translateY(0)}}
+/* 07 Gear */
+.gearg{transform-box:fill-box;transform-origin:center;animation:gearR 4s linear infinite}
+.gearaccent{stroke:#FF7847}
+@keyframes gearR{0%,8%{transform:rotate(0)}12%{transform:rotate(52deg)}16%,20%{transform:rotate(45deg)}23%{transform:rotate(97deg)}27%,31%{transform:rotate(90deg)}34%{transform:rotate(142deg)}38%,42%{transform:rotate(135deg)}45%{transform:rotate(187deg)}49%,53%{transform:rotate(180deg)}56%{transform:rotate(232deg)}60%,64%{transform:rotate(225deg)}67%{transform:rotate(277deg)}71%,75%{transform:rotate(270deg)}78%{transform:rotate(322deg)}82%,86%{transform:rotate(315deg)}89%{transform:rotate(367deg)}93%,100%{transform:rotate(360deg)}}
+/* 08 Envelope */
+.flap{transform-box:fill-box;transform-origin:50% 0%;animation:flapO 4s ease-in-out infinite}
+@keyframes flapO{0%,12%{transform:rotateX(0)}30%,62%{transform:rotateX(178deg)}82%,100%{transform:rotateX(0)}}
+.paper{fill:#22345A;stroke:#7FB2FF;animation:paperU 4s ease-in-out infinite}
+@keyframes paperU{0%,28%{transform:translateY(0)}45%,60%{transform:translateY(-3.2px)}78%,100%{transform:translateY(0)}}
+/* 09 Sliders */
+.k1{animation:kn1 4s ease-in-out infinite}.k2{animation:kn2 4s ease-in-out infinite}.k3{animation:kn3 4s ease-in-out infinite}
+@keyframes kn1{0%,12%{transform:translateX(0)}34%,58%{transform:translateX(6.5px)}82%,100%{transform:translateX(0)}}
+@keyframes kn2{0%,20%{transform:translateX(0)}44%,64%{transform:translateX(-6px)}88%,100%{transform:translateX(0)}}
+@keyframes kn3{0%,28%{transform:translateX(0)}50%,70%{transform:translateX(4.5px)}92%,100%{transform:translateX(0)}}
+/* 10 Equalizer */
+.eq{transform-box:fill-box;transform-origin:50% 100%}
+.eq1{animation:eqA 4s ease-in-out infinite}.eq2{animation:eqB 4s ease-in-out infinite}
+.eq3{animation:eqC 4s ease-in-out infinite}.eq4{animation:eqD 4s ease-in-out infinite}
+@keyframes eqA{0%,10%{transform:scaleY(.55)}26%{transform:scaleY(1)}44%{transform:scaleY(.4)}62%{transform:scaleY(.85)}82%,100%{transform:scaleY(.55)}}
+@keyframes eqB{0%,10%{transform:scaleY(.8)}30%{transform:scaleY(.45)}50%{transform:scaleY(1)}68%{transform:scaleY(.6)}86%,100%{transform:scaleY(.8)}}
+@keyframes eqC{0%,10%{transform:scaleY(.45)}24%{transform:scaleY(.9)}42%{transform:scaleY(.6)}60%{transform:scaleY(1)}80%,100%{transform:scaleY(.45)}}
+@keyframes eqD{0%,10%{transform:scaleY(.7)}28%{transform:scaleY(1)}48%{transform:scaleY(.5)}66%{transform:scaleY(.9)}84%,100%{transform:scaleY(.7)}}
+/* 11 Layers */
+.layT{animation:layTop 4s ease-in-out infinite}.layB{animation:layBot 4s ease-in-out infinite}
+@keyframes layTop{0%,14%{transform:translateY(0)}36%,60%{transform:translateY(-2.6px)}84%,100%{transform:translateY(0)}}
+@keyframes layBot{0%,14%{transform:translateY(0)}36%,60%{transform:translateY(2.6px)}84%,100%{transform:translateY(0)}}
+/* 12 Scan */
+.scang{animation:scanM 4s ease-in-out infinite}
+@keyframes scanM{0%,12%{transform:translate(0,0) rotate(0)}30%{transform:translate(2.4px,-1.8px) rotate(-4deg)}48%{transform:translate(4px,.6px) rotate(3deg)}64%{transform:translate(1.6px,1.8px) rotate(-2deg)}84%,100%{transform:translate(0,0) rotate(0)}}
+
+/* ============ サマリー ============ */
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.sum-card{background:rgba(29,32,68,.88);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.sum-card .sc-head{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;letter-spacing:.14em;color:#d9dbff;margin-bottom:8px}
+.sum-num{font-size:26px;font-weight:800}
+.sum-note{font-size:11px;color:var(--muted2);margin-top:4px}
+.progress{height:7px;border-radius:999px;background:rgba(255,255,255,.14);overflow:hidden;margin-top:11px}
+.progress-fill{height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,#2f7bff,#14b8a6);transition:width .9s var(--out-quint) .4s}
+.progress-fill.over{background:linear-gradient(90deg,#ec4899,#f59e0b)}
+
+/* ============ ナビ 01 Slide Pill（ビュー切替タブ） ============ */
+.glass{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.38);
+  backdrop-filter:blur(12px) saturate(1.5);-webkit-backdrop-filter:blur(12px) saturate(1.5);
+  box-shadow:0 10px 26px rgba(3,10,30,.35)}
+.sp-nav{position:relative;width:344px;max-width:100%;height:66px;border-radius:999px;margin:0 auto 18px}
+.sp-ind{position:absolute;top:6px;left:6px;width:80px;height:54px;border-radius:999px;
+  background:linear-gradient(135deg,#39C2D7,#2E86CC);box-shadow:0 4px 14px rgba(20,120,200,.5);
+  transition:transform .35s cubic-bezier(.35,1.35,.4,1)}
+.sp-items{position:absolute;inset:0;display:flex;padding:0 6px}
+.sp-items .it{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  position:relative;z-index:2;color:#A9BEE0;background:none;border:none;cursor:pointer;font-family:inherit;font-size:10px;font-weight:700}
+.sp-items .it.on{color:#fff}
+.sp-items svg{width:24px;height:24px}
+
+/* ============ ナビ 05 Dock Hop（カテゴリ・ショートカット） ============ */
+.dk-dock{display:flex;align-items:center;justify-content:space-evenly;gap:8px;border-radius:24px;
+  padding:12px 10px;margin-bottom:18px;flex-wrap:wrap}
+.dk-it{width:50px;height:50px;border-radius:15px;display:flex;align-items:center;justify-content:center;color:#fff;
+  position:relative;border:none;cursor:pointer;flex:none}
+.dk-it small{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--muted);white-space:nowrap}
+.dk-it::after{content:"";position:absolute;bottom:-11px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:#fff;opacity:0}
+.dk-it svg{width:27px;height:27px}
+.dk1{background:linear-gradient(135deg,#39C2D7,#2E86CC);animation:dkH1 4s ease-in-out infinite}
+.dk2{background:linear-gradient(135deg,#FF9E6B,#FF6B4A);animation:dkH2 4s ease-in-out infinite}
+.dk3{background:linear-gradient(135deg,#2ECC8F,#1FA86B);animation:dkH3 4s ease-in-out infinite}
+.dk4{background:linear-gradient(135deg,#B18CFF,#7A4FD0);animation:dkH4 4s ease-in-out infinite}
+.dk5{background:linear-gradient(135deg,#FF8FAB,#FF6B8A);animation:dkH5 4s ease-in-out infinite}
+@keyframes dkH1{0%,16%{transform:translateY(-11px) scale(1.14)}24%,94%{transform:none}100%{transform:translateY(-11px) scale(1.14)}}
+@keyframes dkH2{0%,20%{transform:none}28%,36%{transform:translateY(-11px) scale(1.14)}44%,100%{transform:none}}
+@keyframes dkH3{0%,40%{transform:none}48%,56%{transform:translateY(-11px) scale(1.14)}64%,100%{transform:none}}
+@keyframes dkH4{0%,60%{transform:none}68%,76%{transform:translateY(-11px) scale(1.14)}84%,100%{transform:none}}
+@keyframes dkH5{0%,80%{transform:none}86%,94%{transform:translateY(-11px) scale(1.14)}100%{transform:none}}
+.dk-dock-wrap{padding-bottom:20px;margin-bottom:2px}
+.dk-it.sel{outline:2px solid #fff;outline-offset:2px}
+
+/* ============ 完了バナー（カンバン §1-4） ============ */
+.banner{display:none;align-items:center;gap:12px;border-radius:14px;padding:13px 16px;margin-bottom:16px;
+  background:linear-gradient(90deg,#7c3aed,#2563eb 55%,#0f766e);border:1px solid rgba(255,255,255,.25);
+  box-shadow:0 12px 30px rgba(37,99,235,.35)}
+.banner.show{display:flex}
+.b-ico{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.95);color:#2563eb;
+  display:grid;place-items:center;font-size:16px;font-weight:900;flex:0 0 auto}
+.banner strong{display:block;font-size:14.5px}
+.banner span{font-size:11.5px;color:rgba(255,255,255,.85)}
+
+/* ============ ボード＋サイドバー（カンバン §4） ============ */
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 292px;gap:18px;align-items:start}
+.board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.column{display:flex;flex-direction:column;overflow:hidden;min-height:420px;border-radius:var(--radius);
+  background:rgba(29,32,68,.72);border:1px solid var(--line)}
+.col-head{border-top:4px solid var(--accent);background:rgba(255,255,255,.02);padding:14px 14px 10px}
+.col-head-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.col-title{font-size:13px;font-weight:800;letter-spacing:.12em}
+.count{display:inline-grid;place-items:center;min-width:26px;height:22px;padding:0 7px;border-radius:999px;
+  background:var(--accent);color:#fff;font-size:12px;font-weight:800}
+.count.bump{animation:bump .45s var(--spring)}
+@keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.45)}100%{transform:scale(1)}}
+.col-desc{font-size:11px;color:var(--muted2);margin-top:4px}
+.col-sum{font-size:11px;color:var(--muted);margin-top:2px}
+.add-btn{margin-top:10px;padding:5px 10px;border-radius:8px;background:rgba(255,255,255,.05);
+  border:1px dashed rgba(255,255,255,.25);color:var(--muted);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit}
+.add-btn:hover{background:rgba(255,255,255,.12);color:#fff}
+.col-body{display:flex;flex-direction:column;gap:12px;flex:1;padding:12px}
+.col-body.over{background:rgba(255,255,255,.03)}
+.card{background:linear-gradient(180deg,#26295a,#232650);border:1px solid rgba(255,255,255,.09);
+  border-radius:16px;padding:12px;box-shadow:0 8px 20px rgba(0,0,0,.22);cursor:grab;touch-action:none;user-select:none;
+  animation:cardIn .55s var(--out-quint) both;animation-delay:var(--d,0ms)}
+.card:active{cursor:grabbing}
+.card.dragging{animation:none;box-shadow:0 24px 50px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.18);opacity:.98;cursor:grabbing;z-index:1000}
+.card.spring{animation:springIn .55s var(--spring) both}
+.card.removing{overflow:hidden}
+.card.dim{opacity:.22}
+@keyframes cardIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes springIn{0%{opacity:0;transform:scale(.7)}60%{opacity:1;transform:scale(1.06)}100%{opacity:1;transform:scale(1)}}
+.placeholder{border:1.5px dashed rgba(255,255,255,.35);background:rgba(255,255,255,.07);border-radius:16px;flex:0 0 auto}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px}
+.card-title{font-size:13.5px;font-weight:700;line-height:1.35}
+.card-amount{font-size:15px;font-weight:800;white-space:nowrap}
+.del-btn{width:20px;height:20px;border-radius:50%;padding:0;display:grid;place-items:center;flex:0 0 auto;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:12px;line-height:1;cursor:pointer;font-family:inherit;opacity:0;transition:opacity .15s}
+.card:hover .del-btn{opacity:1}
+.del-btn:hover{background:#db2777}
+@media (hover:none){.del-btn{opacity:.55}}
+.pills{display:flex;flex-direction:column;gap:7px}
+.pill{display:flex;align-items:center;gap:8px;border-radius:999px;padding:7px 9px 7px 7px;color:#fff;
+  font-size:11.5px;font-weight:600;box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
+.pill .ini{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.92);color:#1e214d;
+  display:grid;place-items:center;font-size:11px;font-weight:800;flex:0 0 auto}
+.pill .txt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.25}
+.pill .check{width:18px;height:18px;border-radius:50%;border:1.5px solid rgba(255,255,255,.75);
+  background:rgba(255,255,255,.18);display:none;place-items:center;font-size:11px;font-weight:900;flex:0 0 auto}
+.card.is-done .pill .check{display:grid}
+.p-blue{background:#2563eb}.p-violet{background:#7c3aed}.p-pink{background:#db2777}.p-orange{background:#d97706}.p-teal{background:#0f766e}
+.p-amount{background:rgba(255,255,255,.10);box-shadow:none}
+.meta{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:11px;color:var(--muted)}
+.meta-left{display:flex;gap:10px}
+.heart-ic{width:16px;height:16px}
+
+/* 追加フォーム */
+.add-form{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:12px;padding:10px;flex:0 0 auto}
+.add-form input,.add-form select{width:100%;background:#14163a;border:1px solid rgba(255,255,255,.18);border-radius:8px;
+  color:#fff;font-size:13px;padding:8px 10px;margin-bottom:8px;font-family:inherit}
+.add-form input:focus,.add-form select:focus{border-color:#2f7bff;outline:none}
+.add-form-btns{display:flex;gap:8px;margin-top:2px}
+.add-form-btns button{padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;border:1px solid transparent}
+.af-add{background:#2f7bff;color:#fff}
+.af-cancel{background:transparent;color:var(--muted);border-color:var(--line)!important}
+
+/* ============ サイドバー ============ */
+.sidebar{display:flex;flex-direction:column;gap:14px}
+.widget{background:rgba(29,32,68,.88);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.widget h2{font-size:12px;font-weight:800;letter-spacing:.14em;color:#d9dbff;margin:0 0 6px;display:flex;align-items:center;gap:8px}
+.widget .note{font-size:11px;color:var(--muted2);margin:0 0 12px}
+.bars{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-items:end;height:150px;padding-top:8px}
+.bar-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;height:100%}
+.bar-num{font-size:11px;font-weight:800}
+.bar{width:100%;max-width:38px;min-height:6px;border-radius:9px 9px 4px 4px;transition:height .8s var(--out-quint)}
+.bar-label{font-size:11px;color:var(--muted);text-align:center;line-height:1.3}
+.donuts{display:grid;grid-template-columns:1fr 1fr;gap:14px 10px}
+.donut{text-align:center}
+.donut svg.ring{transform:rotate(-90deg)}
+.donut .bgc{fill:none;stroke:rgba(255,255,255,.10);stroke-width:7}
+.donut .fgc{fill:none;stroke-width:7;stroke-linecap:round}
+.donut-num{margin-top:-50px;position:relative;font-size:16px;font-weight:800}
+.donut-num small{font-size:10px;color:var(--muted)}
+.donut-label{margin-top:28px;font-size:11px;color:var(--muted)}
+.schedule{display:flex;flex-direction:column;gap:8px}
+.sched-row{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.04);border:1px solid var(--line);
+  border-right:4px solid var(--c,#2f7bff);border-radius:10px;padding:10px 12px}
+.sched-row time{font-size:12px;font-weight:800;white-space:nowrap}
+.sched-row strong{font-size:12.5px;display:block}
+.sched-row span{font-size:11px;color:var(--muted)}
+.sched-row.done strong{text-decoration:line-through;color:var(--muted)}
+.sched-check{width:20px;height:20px;border-radius:50%;background:#22c55e;color:#fff;display:none;place-items:center;
+  font-size:11px;font-weight:900;margin-left:auto;flex:0 0 auto}
+.sched-row.done .sched-check{display:grid}
+.sched-amt{margin-left:auto;font-size:12px;font-weight:800}
+.sched-row.done .sched-amt{margin-left:0}
+.sched-empty{font-size:12px;color:var(--muted2)}
+
+/* ============ セクション共通 ============ */
+.section{margin-top:34px}
+.section h2.sec-title{font-size:18px;font-weight:800;margin:0 0 6px;display:flex;align-items:center;gap:10px}
+.section .sec-note{font-size:12px;color:var(--muted);margin:0 0 14px}
+.panel{background:rgba(29,32,68,.88);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+
+/* 検索（12 Scan） */
+.search-row{display:flex;align-items:center;gap:10px;background:#14163a;border:1px solid rgba(255,255,255,.18);
+  border-radius:12px;padding:9px 12px;margin-bottom:14px}
+.search-row input{flex:1;background:none;border:none;outline:none;color:#fff;font-size:14px;font-family:inherit}
+/* ナビ 02 Expand Label（カテゴリ絞り込みチップ） */
+.ex-nav{display:flex;align-items:center;gap:4px;border-radius:999px;padding:6px;width:max-content;max-width:100%;flex-wrap:wrap;margin-bottom:14px}
+.ex-it{display:flex;align-items:center;gap:7px;height:44px;border-radius:999px;color:#A9BEE0;overflow:hidden;white-space:nowrap;
+  width:56px;padding-left:16px;background:none;border:none;cursor:pointer;font-family:inherit;transition:width .4s cubic-bezier(.35,1.2,.4,1)}
+.ex-it svg{width:22px;height:22px;flex:none}
+.ex-it .lb{font-size:14px;font-weight:800;opacity:0;transition:opacity .3s}
+.ex-it.on{width:118px;background:linear-gradient(135deg,#39C2D7,#2E86CC);color:#fff}
+.ex-it.on .lb{opacity:1}
+/* 明細リスト */
+table.list{width:100%;border-collapse:collapse;font-size:13px}
+table.list th{font-size:11px;letter-spacing:.1em;color:var(--muted2);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+table.list td{padding:10px;border-bottom:1px solid var(--line)}
+table.list td.amt{text-align:right;font-weight:800;white-space:nowrap}
+table.list th.amt{text-align:right}
+.status-tag{font-size:11px;font-weight:700;border-radius:999px;padding:3px 9px;color:#fff;white-space:nowrap}
+.list-empty{font-size:13px;color:var(--muted2);padding:14px 10px}
+
+/* ナビ 06 Liquid Tab（期間切替） */
+.lt-bar{border-radius:999px;padding:10px 14px 14px;width:max-content;max-width:100%;margin-bottom:16px}
+.lt-tabs{display:flex;gap:26px}
+.lt-tabs .tb{font-size:15px;font-weight:800;color:#A9BEE0;background:none;border:none;cursor:pointer;font-family:inherit;padding:2px 0}
+.lt-tabs .tb.on{color:#fff}
+.lt-blob{height:5px;border-radius:999px;background:linear-gradient(90deg,#39C2D7,#2ECC8F);margin-top:8px;
+  transition:transform .45s cubic-bezier(.35,1.35,.4,1),width .45s cubic-bezier(.35,1.35,.4,1)}
+/* 分析バー */
+.ana-row{margin-bottom:16px}
+.ana-row .ana-head{display:flex;justify-content:space-between;font-size:13px;margin-bottom:7px}
+.ana-row .ana-head b{font-weight:800}
+.ana-track{height:12px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden}
+.ana-fill{height:100%;border-radius:999px;transition:width .9s var(--out-quint)}
+/* ナビ 04 Glass Player（家計ブリーフィング） */
+.pl-card{display:flex;align-items:center;gap:14px;border-radius:24px;padding:14px 18px;max-width:560px}
+.pl-disc{width:56px;height:56px;border-radius:50%;flex:none;position:relative;
+  background:conic-gradient(from 0deg,#39C2D7,#2E86CC,#7A4FD0,#39C2D7)}
+.pl-disc.playing{animation:plSpin 4s linear infinite}
+@keyframes plSpin{to{transform:rotate(360deg)}}
+.pl-disc::after{content:"";position:absolute;inset:21px;border-radius:50%;background:#0D1629;border:2px solid rgba(255,255,255,.5)}
+.pl-mid{flex:1;min-width:0}
+.pl-t{font-size:13px;font-weight:700;margin-bottom:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-track{height:6px;border-radius:3px;background:rgba(255,255,255,.25);overflow:hidden}
+.pl-fill{height:100%;width:4%;border-radius:3px;background:linear-gradient(90deg,#39C2D7,#2ECC8F)}
+.pl-fill.playing{animation:plFill 4s linear infinite}
+@keyframes plFill{0%{width:4%}78%{width:76%}92%,100%{width:4%}}
+.pl-eq{display:flex;align-items:flex-end;gap:3.5px;height:24px;margin-top:9px}
+.pl-eq i{display:block;width:4.5px;border-radius:2px;background:#7FE3F0;height:10px}
+.pl-eq.playing i:nth-child(1){animation:plEqA 1s ease-in-out infinite alternate}
+.pl-eq.playing i:nth-child(2){animation:plEqB .667s ease-in-out infinite alternate}
+.pl-eq.playing i:nth-child(3){animation:plEqC 1s ease-in-out infinite alternate}
+.pl-eq.playing i:nth-child(4){animation:plEqA .5s ease-in-out infinite alternate-reverse}
+@keyframes plEqA{from{height:7px}to{height:22px}}
+@keyframes plEqB{from{height:18px}to{height:8px}}
+@keyframes plEqC{from{height:10px}to{height:24px}}
+.pl-btn{width:46px;height:46px;border-radius:50%;flex:none;position:relative;border:none;cursor:pointer;
+  background:rgba(255,255,255,.92);box-shadow:0 4px 12px rgba(3,10,30,.3)}
+.pl-btn .tri{position:absolute;left:16px;top:13px;width:0;height:0;border-left:15px solid #12315F;border-top:10px solid transparent;border-bottom:10px solid transparent}
+.pl-btn .bar{position:absolute;top:13px;width:6px;height:20px;border-radius:2px;background:#12315F;opacity:0}
+.pl-btn .b1{left:14px}.pl-btn .b2{left:26px}
+.pl-btn.playing .tri{opacity:0}
+.pl-btn.playing .bar{opacity:1}
+
+/* 設定 */
+.set-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.set-item label{font-size:12px;font-weight:700;color:var(--muted);display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.set-item input[type=number]{width:100%;background:#14163a;border:1px solid rgba(255,255,255,.18);border-radius:8px;color:#fff;font-size:14px;padding:9px 11px;font-family:inherit}
+.set-item input[type=range]{width:100%;accent-color:#2f7bff;margin-top:10px}
+.btn{display:inline-flex;align-items:center;gap:9px;padding:10px 16px;border-radius:10px;border:1px solid var(--line);
+  background:rgba(255,255,255,.06);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn:hover{background:rgba(255,255,255,.12)}
+.btn.primary{background:#2f7bff;border-color:transparent}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+
+/* ナビ 03 Center Action（中央＋ボタン＋扇） */
+.ca-wrap{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:50;width:0;height:0}
+.ca-btn{position:absolute;left:0;bottom:0;transform:translateX(-50%);width:60px;height:60px;border-radius:50%;z-index:3;
+  background:linear-gradient(135deg,#FF9E6B,#FF6B4A);border:2px solid rgba(255,255,255,.55);
+  box-shadow:0 10px 22px rgba(255,110,70,.45);display:flex;align-items:center;justify-content:center;color:#fff;cursor:pointer;
+  transition:transform .3s ease-in-out}
+.ca-btn svg{width:28px;height:28px;stroke-width:2.4}
+.ca-btn.open{transform:translateX(-50%) scale(1) rotate(45deg)}
+.ca-btn.press{transform:translateX(-50%) scale(.88)}
+.ca-fan{position:absolute;left:0;bottom:18px;width:0;height:0;z-index:2}
+.ca-fan .f{position:absolute;left:-21px;top:-21px;width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  color:#fff;opacity:0;transform:translate(0,10px) scale(.4);border:none;cursor:pointer;pointer-events:none;
+  transition:transform .4s cubic-bezier(.3,1.4,.4,1),opacity .3s}
+.ca-fan .f svg{width:21px;height:21px}
+.ca-fan .f small{position:absolute;top:46px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--text);white-space:nowrap;text-shadow:0 1px 6px rgba(0,0,0,.8)}
+.ca-fan.open .f{opacity:1;pointer-events:auto}
+.ca-fan.open .f1{background:#2ECC8F;transform:translate(-72px,-52px) scale(1)}
+.ca-fan.open .f2{background:#39C2D7;transform:translate(0,-78px) scale(1)}
+.ca-fan.open .f3{background:#FF6B8A;transform:translate(72px,-52px) scale(1)}
+.ca-fan .f1{background:#2ECC8F}.ca-fan .f2{background:#39C2D7}.ca-fan .f3{background:#FF6B8A}
+.ca-caption{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);font-size:11px;color:var(--muted);z-index:49;white-space:nowrap}
+
+/* トースト */
+.toast{position:fixed;top:18px;left:50%;transform:translate(-50%,-80px);z-index:200;display:flex;align-items:center;gap:10px;
+  background:rgba(29,32,68,.96);border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:11px 16px;
+  font-size:13px;font-weight:700;box-shadow:0 16px 40px rgba(0,0,0,.5);transition:transform .45s var(--spring)}
+.toast.show{transform:translate(-50%,0)}
+
+/* 対応表 */
+details.motions{margin-top:34px;background:rgba(29,32,68,.88);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+details.motions summary{cursor:pointer;font-size:13px;font-weight:800;letter-spacing:.06em}
+details.motions table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:12px}
+details.motions td,details.motions th{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+details.motions th{color:var(--muted2);font-size:11px;letter-spacing:.08em}
+
+@media(max-width:1020px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{flex-direction:row;flex-wrap:wrap}
+  .sidebar .widget{flex:1 1 260px}
+  .board{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .summary{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:600px){
+  .wrap{padding:16px 12px 28px}
+  h1{font-size:26px}
+  .board{grid-template-columns:1fr}
+  .sidebar{flex-direction:column}
+  .set-grid{grid-template-columns:1fr}
+  .summary{grid-template-columns:1fr 1fr}
+}
+body.drag-active{overflow:hidden}
+/* 公開版：タブ切替（選択中のパネルだけ表示） */
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+.section.tab-panel{margin-top:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="topbar">
+    <div>
+      <a href="../" class="crumb crumb-back">← ウゴキラボ（ハブ）へ戻る</a>
+      <div class="crumb">家計 &nbsp;›&nbsp; <b>今月のボード</b></div>
+      <h1>家計簿</h1>
+      <p class="sub">支出カードをドラッグして「精算済み」へ。集計・グラフ・予定がその場で連動します（サンプルデータ入り）。</p>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px">
+      <div class="userchip">
+        <div class="avatar-big">小</div>
+        <div><strong>小木</strong><span>家計管理</span></div>
+      </div>
+      <!-- ツールバー：06 Hop（順番に弾む）＋ 04 Bell（通知） -->
+      <div style="display:flex;align-items:center;gap:18px;padding:2px 6px" aria-label="ツールバー">
+        <span class="hop h1" title="ホーム"><svg class="ic" width="26" height="26" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7M6 9.8V20h12V9.8"/></svg></span>
+        <a href="#list" data-tab="list" class="hop h2" title="明細へ" style="color:inherit"><svg class="ic" width="26" height="26" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M16.3 16.3L21 21"/></svg></a>
+        <span class="hop h3 bellwrap" title="支払い通知">
+          <svg class="ic" width="26" height="26" viewBox="0 0 24 24"><g class="bellg"><path d="M18 15.8H6c.8-1.1 1.2-2.2 1.2-3.8v-1a4.8 4.8 0 119.6 0v1c0 1.6.4 2.7 1.2 3.8z"/><path d="M10 19a2.2 2.2 0 004 0"/></g></svg>
+          <span class="badge" id="due-badge">3</span>
+        </span>
+        <a href="#settings" data-tab="settings" class="hop h4" title="設定へ" style="color:inherit"><svg class="ic" width="26" height="26" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.7M12 18.5v2.7M2.8 12h2.7M18.5 12h2.7M5.5 5.5l1.9 1.9M16.6 16.6l1.9 1.9M18.5 5.5l-1.9 1.9M7.4 16.6l-1.9 1.9"/></svg></a>
+      </div>
+    </div>
+  </header>
+
+  <div class="hint"><i></i><span><strong>遊び方：</strong>カードをドラッグして列を移動／「＋追加」で支出を記録／右下の＋ボタンからも追加できます。データはこの端末に自動保存されます。</span></div>
+
+  <!-- サマリー -->
+  <div class="summary">
+    <div class="sum-card">
+      <div class="sc-head"><svg class="ic" width="20" height="20" viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="13" rx="2"/><rect class="paper" x="7" y="8" width="10" height="7" rx="1"/><path class="flap" d="M3.5 6.2L12 12.8L20.5 6.2"/></svg>今月の収入</div>
+      <div class="sum-num" id="sum-income">¥0</div>
+      <div class="sum-note">設定で変更できます（サンプル値）</div>
+    </div>
+    <div class="sum-card">
+      <div class="sc-head"><svg class="ic" width="20" height="20" viewBox="0 0 24 24"><path class="eq eq1" d="M5.5 20v-9"/><path class="eq eq2" d="M10 20V5.5"/><path class="eq eq3" d="M14.5 20v-11"/><path class="eq eq4" d="M19 20V8"/></svg>支出合計</div>
+      <div class="sum-num" id="sum-total">¥0</div>
+      <div class="progress"><div class="progress-fill" id="sum-progress"></div></div>
+      <div class="sum-note" id="sum-progress-note">収入に対して 0%</div>
+    </div>
+    <div class="sum-card">
+      <div class="sc-head"><svg class="ic" width="20" height="20" viewBox="0 0 24 24"><circle class="drawC" cx="12" cy="12" r="9" pathLength="100"/><path class="drawK" d="M8 12.5l2.6 2.6L16 9.5" pathLength="100"/></svg>精算済み</div>
+      <div class="sum-num" id="sum-done">¥0</div>
+      <div class="sum-note" id="sum-done-note">0件 完了</div>
+    </div>
+    <div class="sum-card">
+      <div class="sc-head"><span class="pcwrap"><svg class="ic plusic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><svg class="ic" viewBox="0 0 24 24"><path class="checkP" pathLength="100" d="M4.5 12.5l5 5L19.5 7"/></svg></span>残り（収入−支出）</div>
+      <div class="sum-num" id="sum-rest">¥0</div>
+      <div class="sum-note">カードを動かすと即時で再計算</div>
+    </div>
+  </div>
+
+  <!-- ナビ 01 Slide Pill：セクション切替 -->
+  <nav class="sp-nav glass" aria-label="セクション切替">
+    <div class="sp-ind" id="sp-ind"></div>
+    <div class="sp-items" role="tablist" aria-label="表示の切り替え">
+      <button class="it on" data-nav="0" data-tab="board" role="tab" id="tab-board" aria-controls="panel-board" aria-selected="true"><svg class="ic" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7M6 9.8V20h12V9.8"/></svg>ボード</button>
+      <button class="it" data-nav="1" data-tab="list" role="tab" id="tab-list" aria-controls="list-sec" aria-selected="false"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M16.3 16.3L21 21"/></svg>明細</button>
+      <button class="it" data-nav="2" data-tab="analysis" role="tab" id="tab-analysis" aria-controls="analysis-sec" aria-selected="false"><svg class="ic" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0112 0v5l1.5 3h-15z"/><path d="M10 21a2.2 2.2 0 004 0"/></svg>分析</button>
+      <button class="it" data-nav="3" data-tab="settings" role="tab" id="tab-settings" aria-controls="settings-sec" aria-selected="false"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1.4-3.4 4.2-5 7.5-5s6.1 1.6 7.5 5"/></svg>設定</button>
+    </div>
+  </nav>
+
+  <!-- ボードタブ -->
+  <div class="tab-panel active" id="panel-board" role="tabpanel" aria-labelledby="tab-board">
+
+  <!-- ナビ 05 Dock Hop：カテゴリ・ショートカット（タップで絞り込み） -->
+  <div class="dk-dock-wrap">
+    <div class="dk-dock glass" id="dock" aria-label="カテゴリ絞り込み">
+      <button class="dk-it dk1" data-cat="A"><svg class="ic" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7M6 9.8V20h12V9.8"/></svg><small>食費</small></button>
+      <button class="dk-it dk2" data-cat="B"><svg class="ic" viewBox="0 0 24 24"><path d="M4 8h3l2-2.5h6L17 8h3a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z"/><circle cx="12" cy="13.5" r="3.4"/></svg><small>住居・光熱</small></button>
+      <button class="dk-it dk3" data-cat="C"><svg class="ic" viewBox="0 0 24 24"><path d="M9 18.5V6.8L19 4.8v11.7"/><circle cx="6.8" cy="18.5" r="2.6"/><circle cx="16.8" cy="16.5" r="2.6"/></svg><small>日用品・交通</small></button>
+      <button class="dk-it dk4" data-cat="D"><svg class="ic" viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 016.5 4h11A2.5 2.5 0 0120 6.5v7a2.5 2.5 0 01-2.5 2.5H12l-4.5 4v-4H6.5A2.5 2.5 0 014 13.5v-7z"/></svg><small>娯楽・外食</small></button>
+      <button class="dk-it dk5" data-cat=""><svg class="ic" viewBox="0 0 24 24"><path d="M12 20.5C6 16.5 3.5 13.3 3.5 9.9 3.5 7.2 5.6 5 8.2 5c1.5 0 3 .8 3.8 2 .8-1.2 2.3-2 3.8-2C18.4 5 20.5 7.2 20.5 9.9c0 3.4-2.5 6.6-8.5 10.6z"/></svg><small>すべて</small></button>
+    </div>
+  </div>
+
+  <!-- 完了バナー -->
+  <div class="banner" id="banner" role="status">
+    <div class="b-ico">✓</div>
+    <div><strong>今月の精算がすべて完了しました</strong><span>全ての支出カードが「精算済み」にそろいました。おつかれさまでした！</span></div>
+  </div>
+
+  <!-- ボード -->
+  <div id="board-sec" class="layout">
+    <main class="board" id="board" aria-label="家計簿ボード"></main>
+    <aside class="sidebar">
+      <section class="widget">
+        <h2>精算済み金額</h2><p class="note">カテゴリごとの精算済み合計（円）</p>
+        <div class="bars" id="bars"></div>
+      </section>
+      <section class="widget">
+        <h2>予算の使用率</h2><p class="note">カテゴリ予算に対する支出割合</p>
+        <div class="donuts" id="donuts"></div>
+      </section>
+      <section class="widget">
+        <h2>支払い予定</h2><p class="note">引き落とし・支払日つきの支出</p>
+        <div class="schedule" id="schedule"></div>
+      </section>
+    </aside>
+  </div>
+
+  </div><!-- /ボードタブ -->
+
+  <!-- 明細 -->
+  <section class="section tab-panel" id="list-sec" role="tabpanel" aria-labelledby="tab-list">
+    <h2 class="sec-title"><svg class="ic" width="26" height="26" viewBox="0 0 24 24"><g class="lay layT"><path d="M12 3.5L21 8.3L12 13.1L3 8.3z"/></g><g><path d="M4.5 12.4L12 16.4l7.5-4"/></g><g class="lay layB"><path d="M4.5 16.4L12 20.4l7.5-4"/></g></svg>明細リスト</h2>
+    <p class="sec-note">検索とカテゴリ絞り込みができます。ボードと常に連動します。</p>
+    <div class="panel">
+      <div class="search-row">
+        <svg class="ic" width="24" height="24" viewBox="0 0 24 24"><g class="scang"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.3 15.3L20.5 20.5"/></g></svg>
+        <input type="text" id="search" placeholder="支出名でさがす（例：スーパー、家賃）" aria-label="支出名で検索">
+      </div>
+      <div class="ex-nav glass" id="ex-nav" aria-label="カテゴリ絞り込み">
+        <button class="ex-it on" data-filter=""><svg class="ic" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7M6 9.8V20h12V9.8"/></svg><span class="lb">すべて</span></button>
+        <button class="ex-it" data-filter="A"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M16.3 16.3L21 21"/></svg><span class="lb">食費</span></button>
+        <button class="ex-it" data-filter="B"><svg class="ic" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0112 0v5l1.5 3h-15z"/><path d="M10 21a2.2 2.2 0 004 0"/></svg><span class="lb">住居</span></button>
+        <button class="ex-it" data-filter="C"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1.4-3.4 4.2-5 7.5-5s6.1 1.6 7.5 5"/></svg><span class="lb">日用品</span></button>
+        <button class="ex-it" data-filter="D"><svg class="ic" viewBox="0 0 24 24"><path d="M12 20.5C6 16.5 3.5 13.3 3.5 9.9 3.5 7.2 5.6 5 8.2 5c1.5 0 3 .8 3.8 2 .8-1.2 2.3-2 3.8-2C18.4 5 20.5 7.2 20.5 9.9c0 3.4-2.5 6.6-8.5 10.6z"/></svg><span class="lb">娯楽</span></button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="list">
+          <thead><tr><th>支出</th><th>カテゴリ</th><th>状態</th><th>支払日</th><th class="amt">金額</th></tr></thead>
+          <tbody id="list-body"></tbody>
+        </table>
+        <div class="list-empty" id="list-empty" style="display:none">条件に合う支出はありません</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 分析 -->
+  <section class="section tab-panel" id="analysis-sec" role="tabpanel" aria-labelledby="tab-analysis">
+    <h2 class="sec-title"><svg class="ic" width="26" height="26" viewBox="0 0 24 24"><path class="eq eq1" d="M5.5 20v-9"/><path class="eq eq2" d="M10 20V5.5"/><path class="eq eq3" d="M14.5 20v-11"/><path class="eq eq4" d="M19 20V8"/></svg>分析</h2>
+    <p class="sec-note">カテゴリ別の支出バランス。期間タブは比較用の目安表示です（先月・3ヶ月は今月比のサンプル換算）。</p>
+    <div class="lt-bar glass">
+      <div class="lt-tabs" id="lt-tabs">
+        <button class="tb on" data-period="0">今月</button>
+        <button class="tb" data-period="1">先月</button>
+        <button class="tb" data-period="2">3ヶ月平均</button>
+      </div>
+      <div class="lt-blob" id="lt-blob"></div>
+    </div>
+    <div class="panel" id="ana-panel" style="margin-bottom:16px"></div>
+    <div class="pl-card glass">
+      <div class="pl-disc" id="pl-disc"></div>
+      <div class="pl-mid">
+        <div class="pl-t" id="pl-title">今月の家計ブリーフィング（サンプル再生）</div>
+        <div class="pl-track"><div class="pl-fill" id="pl-fill"></div></div>
+        <div class="pl-eq" id="pl-eq"><i></i><i></i><i></i><i></i></div>
+      </div>
+      <button class="pl-btn" id="pl-btn" aria-label="ブリーフィング再生・停止"><span class="tri"></span><span class="bar b1"></span><span class="bar b2"></span></button>
+    </div>
+  </section>
+
+  <!-- 設定 -->
+  <section class="section tab-panel" id="settings-sec" role="tabpanel" aria-labelledby="tab-settings">
+    <h2 class="sec-title"><svg class="ic" width="26" height="26" viewBox="0 0 24 24"><g class="gearg"><circle cx="12" cy="12" r="3.4"/><path d="M12 2.8v3M12 18.2v3M2.8 12h3M18.2 12h3M5.5 5.5l2.1 2.1M16.4 16.4l2.1 2.1M18.5 5.5l-2.1 2.1M7.6 16.4l-2.1 2.1"/><path class="gearaccent" d="M12 2.8v3"/></g></svg>設定</h2>
+    <p class="sec-note">収入とカテゴリ予算を変更すると、サマリーと使用率リングにすぐ反映されます。</p>
+    <div class="panel">
+      <div class="set-grid">
+        <div class="set-item">
+          <label>今月の収入（円）</label>
+          <input type="number" id="set-income" min="0" step="1000">
+        </div>
+        <div class="set-item">
+          <label><svg class="ic" width="20" height="20" viewBox="0 0 24 24"><path d="M3.5 6.5h17M3.5 12h17M3.5 17.5h17" stroke="#3A5079"/><g class="k1"><circle cx="9" cy="6.5" r="2.3" fill="#1d2044"/></g><g class="k2"><circle cx="15" cy="12" r="2.3" fill="#1d2044"/></g><g class="k3"><circle cx="8" cy="17.5" r="2.3" fill="#1d2044"/></g></svg>カテゴリ予算は下のスライダー／入力で調整</label>
+          <div style="font-size:12px;color:var(--muted2)">スライダーと金額入力は連動します</div>
+        </div>
+      </div>
+      <div class="set-grid" id="budget-grid" style="margin-top:14px"></div>
+      <div class="btn-row">
+        <button class="btn primary" id="btn-report"><svg class="ic" width="20" height="20" viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="13" rx="2"/><rect class="paper" x="7" y="8" width="10" height="7" rx="1"/><path class="flap" d="M3.5 6.2L12 12.8L20.5 6.2"/></svg>月次レポートを作る</button>
+        <button class="btn" id="btn-reset">サンプルデータに戻す</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 使ったアニメーション対応表 -->
+  <details class="motions">
+    <summary>このツールに使ったアニメーション（既存3設計図との対応）</summary>
+    <table>
+      <tr><th>設計図</th><th>モーション</th><th>このツールでの使い所</th></tr>
+      <tr><td>カンバン設計図</td><td>ドラッグ＆ドロップ（浮く／隙間／吸着・FLIP 250ms）</td><td>支出カードを「未精算→支払い予定→確認中→精算済み」へ移動</td></tr>
+      <tr><td>カンバン設計図</td><td>件数・棒グラフ・円グラフ・予定・完了バナーの連動</td><td>列件数バッジ／精算済み棒グラフ／予算使用率リング／支払い予定リスト／全精算バナー。進捗バーは支出割合に適用</td></tr>
+      <tr><td>カンバン設計図</td><td>導入（カードが60ms刻みで出現）・追加の spring・削除の縮み</td><td>初回表示とカード追加・削除</td></tr>
+      <tr><td>アイコン設計図</td><td>01 Draw／02 Fill／04 Bell／05 Plus→Check／06 Hop</td><td>精算済みサマリー／固定費ハート／通知ベル（バッジ）／残りサマリーと追加完了トースト／上部ツールバー</td></tr>
+      <tr><td>アイコン設計図</td><td>07 Gear／08 Envelope／09 Sliders／10 Equalizer／11 Layers／12 Scan</td><td>設定見出し／収入サマリーとレポートボタン／予算スライダー見出し／支出サマリーと分析見出し／明細見出し／検索アイコン</td></tr>
+      <tr><td>ナビバー設計図</td><td>01 Slide Pill</td><td>上部のセクション切替タブ（ピルが行き過ぎて戻るイージングで移動、タップで切替）</td></tr>
+      <tr><td>ナビバー設計図</td><td>02 Expand Label</td><td>明細のカテゴリ絞り込みチップ（選択中だけ伸びて名前が出る）</td></tr>
+      <tr><td>ナビバー設計図</td><td>03 Center Action</td><td>画面下の＋ボタン（押すと45°回転、3つの追加アクションが扇に開く）</td></tr>
+      <tr><td>ナビバー設計図</td><td>04 Glass Player</td><td>分析の家計ブリーフィング再生カード（回る盤面／進むバー／跳ねる波形／再生⇔一時停止）</td></tr>
+      <tr><td>ナビバー設計図</td><td>05 Dock Hop</td><td>カテゴリ・ショートカットのドック（順番に跳ね、ドット表示。タップで絞り込み）</td></tr>
+      <tr><td>ナビバー設計図</td><td>06 Liquid Tab</td><td>分析の期間タブ（下線が伸び縮みしながら追いかける）</td></tr>
+    </table>
+    <p style="font-size:12px;color:var(--muted)">※ 自動ループの見本を、ツールとして使う場面では「タップで動く」形に置き換えたものがあります（01 Slide Pill、02、03、06）。動きの値とイージングは設計図のままです。金額・件数などのデータはすべてダミーのサンプルで、実データは使っていません。</p>
+  </details>
+
+  <p style="font-size:11px;color:var(--muted2);margin-top:18px">ウゴキラボ 家計簿ツール — カンバン／アニメーションアイコン／ナビバー 3設計図の実装サンプル</p>
+  <p style="font-size:11px;color:var(--muted2);margin-top:6px">公開サンプル版：金額はダミーデータです。入力した内容はあなたのブラウザ内にだけ保存され、サーバーには送信されません。</p>
+</div>
+
+<!-- ナビ 03 Center Action -->
+<div class="ca-caption">＋から支出を追加</div>
+<div class="ca-wrap">
+  <div class="ca-fan" id="ca-fan">
+    <button class="f f1" data-add="expense"><svg class="ic" viewBox="0 0 24 24"><path d="M4 8h3l2-2.5h6L17 8h3a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z"/><circle cx="12" cy="13.5" r="3.4"/></svg><small>支出</small></button>
+    <button class="f f2" data-add="fixed"><svg class="ic" viewBox="0 0 24 24"><path d="M12 20.5C6 16.5 3.5 13.3 3.5 9.9 3.5 7.2 5.6 5 8.2 5c1.5 0 3 .8 3.8 2 .8-1.2 2.3-2 3.8-2C18.4 5 20.5 7.2 20.5 9.9c0 3.4-2.5 6.6-8.5 10.6z"/></svg><small>固定費</small></button>
+    <button class="f f3" data-add="memo"><svg class="ic" viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 016.5 4h11A2.5 2.5 0 0120 6.5v7a2.5 2.5 0 01-2.5 2.5H12l-4.5 4v-4H6.5A2.5 2.5 0 014 13.5v-7z"/></svg><small>メモ</small></button>
+  </div>
+  <button class="ca-btn" id="ca-btn" aria-label="追加メニュー"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+</div>
+
+<div class="toast" id="toast">
+  <svg class="ic" width="24" height="24" viewBox="0 0 24 24"><circle class="drawC" cx="12" cy="12" r="9" pathLength="100"/><path class="drawK" d="M8 12.5l2.6 2.6L16 9.5" pathLength="100"/></svg>
+  <span id="toast-text">追加しました</span>
+</div>
+
+<script>
+"use strict";
+/* ================= データ ================= */
+const CATS = {
+  A:{label:"食費", short:"食", color:"#2f7bff", pill:"p-blue"},
+  B:{label:"住居・光熱", short:"住", color:"#8b5cf6", pill:"p-violet"},
+  C:{label:"日用品・交通", short:"日", color:"#ec4899", pill:"p-pink"},
+  D:{label:"娯楽・外食", short:"娯", color:"#f59e0b", pill:"p-orange"}
+};
+const COLS = [
+  {id:"todo",  title:"未精算",       desc:"これから確認する支出", accent:"#2f7bff"},
+  {id:"doing", title:"支払い予定",   desc:"今月の引き落とし・支払い", accent:"#ec4899"},
+  {id:"review",title:"確認中",       desc:"レシート・金額を確認中", accent:"#14b8a6"},
+  {id:"done",  title:"精算済み",     desc:"支払いが終わった支出", accent:"#22c55e"}
+];
+const SAMPLE = {
+  income: 320000,
+  budgets: {A:60000, B:130000, C:30000, D:30000},
+  cards: [
+    {id:"c1", col:"todo",   title:"スーパー食材買い出し", amount:8400,  cat:"A", memo:"週末まとめ買い", due:"", fav:false},
+    {id:"c2", col:"todo",   title:"外食ランチ",           amount:1280,  cat:"D", memo:"同僚と",         due:"", fav:false},
+    {id:"c3", col:"doing",  title:"家賃",                 amount:95000, cat:"B", memo:"口座引き落とし", due:"1日",  fav:true},
+    {id:"c4", col:"doing",  title:"電気・ガス代",         amount:9860,  cat:"B", memo:"口座引き落とし", due:"15日", fav:true},
+    {id:"c5", col:"review", title:"日用品まとめ買い",     amount:3460,  cat:"C", memo:"レシート確認中", due:"", fav:false},
+    {id:"c6", col:"review", title:"交通費チャージ",       amount:5000,  cat:"C", memo:"ICカード",       due:"", fav:false},
+    {id:"c7", col:"done",   title:"通信費",               amount:4980,  cat:"B", memo:"口座引き落とし", due:"27日", fav:true},
+    {id:"c8", col:"done",   title:"動画サブスク",         amount:1980,  cat:"D", memo:"月額",           due:"20日", fav:true}
+  ]
+};
+const LS_KEY = "kakeibo-animated-v1";
+let state;
+try {
+  const saved = JSON.parse(localStorage.getItem(LS_KEY) || "null");
+  state = (saved && Array.isArray(saved.cards) && saved.budgets) ? saved : JSON.parse(JSON.stringify(SAMPLE));
+} catch(e){ state = JSON.parse(JSON.stringify(SAMPLE)); }
+let idSeq = 100;
+let filterCat = "", searchText = "", period = 0;
+const PERIOD_FACTOR = [1, 0.94, 0.88];
+const PERIOD_LABEL = ["今月", "先月", "3ヶ月平均"];
+const yen = n => "¥" + Math.round(n).toLocaleString("ja-JP");
+const $ = s => document.querySelector(s);
+function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){} }
+
+/* ================= ボード構築 ================= */
+const board = $("#board");
+COLS.forEach(col => {
+  const sec = document.createElement("section");
+  sec.className = "column"; sec.dataset.col = col.id; sec.style.setProperty("--accent", col.accent);
+  sec.innerHTML = `
+    <div class="col-head">
+      <div class="col-head-row"><span class="col-title">${col.title}</span><span class="count" data-count>0</span></div>
+      <div class="col-desc">${col.desc}</div>
+      <div class="col-sum" data-colsum>¥0</div>
+      <button class="add-btn" type="button">＋ 追加</button>
+    </div>
+    <div class="col-body"></div>`;
+  board.appendChild(sec);
+  sec.querySelector(".add-btn").addEventListener("click", () => openAddForm(sec.querySelector(".col-body")));
+});
+/* サイドバーの棒・リングの土台 */
+const barsEl = $("#bars"), donutsEl = $("#donuts");
+Object.entries(CATS).forEach(([key, cat]) => {
+  const bc = document.createElement("div"); bc.className = "bar-col";
+  bc.innerHTML = `<span class="bar-num" data-barnum="${key}">¥0</span><div class="bar" data-bar="${key}" style="background:${cat.color};height:6px"></div><span class="bar-label">${cat.label}</span>`;
+  barsEl.appendChild(bc);
+  const dn = document.createElement("div"); dn.className = "donut";
+  dn.innerHTML = `<svg class="ring" width="76" height="76" viewBox="0 0 76 76">
+      <circle class="bgc" cx="38" cy="38" r="30"></circle>
+      <circle class="fgc" data-fgc="${key}" cx="38" cy="38" r="30" stroke="${cat.color}" stroke-dasharray="188.4955" stroke-dashoffset="188.4955"></circle></svg>
+    <div class="donut-num"><span data-donutnum="${key}">0</span><small>%</small></div>
+    <div class="donut-label">${cat.label}</div>`;
+  donutsEl.appendChild(dn);
+});
+/* 設定の予算入力 */
+const budgetGrid = $("#budget-grid");
+Object.entries(CATS).forEach(([key, cat]) => {
+  const d = document.createElement("div"); d.className = "set-item";
+  d.innerHTML = `<label>${cat.label}の予算（円）</label>
+    <input type="number" min="0" step="1000" data-budget-num="${key}">
+    <input type="range" min="0" max="200000" step="5000" data-budget-range="${key}">`;
+  budgetGrid.appendChild(d);
+  d.querySelector(`[data-budget-num]`).addEventListener("input", e => { state.budgets[key] = Math.max(0, +e.target.value || 0); syncBudgetInputs(); updateAll(false); });
+  d.querySelector(`[data-budget-range]`).addEventListener("input", e => { state.budgets[key] = +e.target.value; syncBudgetInputs(); updateAll(false); });
+});
+function syncBudgetInputs(){
+  Object.keys(CATS).forEach(k => {
+    const n = budgetGrid.querySelector(`[data-budget-num="${k}"]`), r = budgetGrid.querySelector(`[data-budget-range="${k}"]`);
+    if (document.activeElement !== n) n.value = state.budgets[k];
+    r.value = Math.min(200000, state.budgets[k]);
+  });
+  $("#set-income").value = state.income;
+}
+$("#set-income").addEventListener("input", e => { state.income = Math.max(0, +e.target.value || 0); updateAll(false); });
+
+/* ================= カード ================= */
+function cardEl(card, idx){
+  const cat = CATS[card.cat] || CATS.A;
+  const el = document.createElement("article");
+  el.className = "card" + (card.col === "done" ? " is-done" : "");
+  el.dataset.id = card.id; el.style.setProperty("--d", (idx * 60) + "ms");
+  el.innerHTML = `
+    <div class="card-top"><div class="card-title">${escapeHtml(card.title)}</div>
+      <div class="card-amount">${yen(card.amount)}</div>
+      <button type="button" class="del-btn" aria-label="このカードを削除">×</button></div>
+    <div class="pills">
+      <div class="pill ${cat.pill}"><span class="ini">${cat.short}</span><span class="txt">${cat.label}</span><span class="check">✓</span></div>
+      <div class="pill p-amount"><span class="ini" style="background:rgba(255,255,255,.18);color:#fff">¥</span><span class="txt">${escapeHtml(card.memo || "メモなし")}</span><span class="check">✓</span></div>
+    </div>
+    <div class="meta"><span class="meta-left"><span>${card.due ? "支払日 " + escapeHtml(card.due) : "支払日なし"}</span></span>
+      ${card.fav ? `<svg class="ic heart-ic" viewBox="0 0 24 24"><path class="heartP" pathLength="100" d="M12 20s-7.6-4.7-9.4-9.1C1.3 7.8 3.2 4.4 6.6 4.4c2 0 3.4 1.1 5.4 3.1 2-2 3.4-3.1 5.4-3.1 3.4 0 5.3 3.4 4 6.5C19.6 15.3 12 20 12 20z"/></svg>` : `<span style="color:var(--muted2)">—</span>`}
+    </div>`;
+  el.querySelector(".del-btn").addEventListener("click", () => deleteCard(card.id));
+  el.querySelector(".del-btn").addEventListener("pointerdown", e => e.stopPropagation());
+  attachDrag(el);
+  applyDim(el, card);
+  return el;
+}
+function escapeHtml(s){ return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function applyDim(el, card){
+  const match = (!filterCat || card.cat === filterCat) && (!searchText || card.title.includes(searchText));
+  el.classList.toggle("dim", !match);
+}
+function renderBoard(){
+  COLS.forEach(col => {
+    const body = board.querySelector(`.column[data-col="${col.id}"] .col-body`);
+    body.innerHTML = "";
+    state.cards.filter(c => c.col === col.id).forEach((c, i) => body.appendChild(cardEl(c, i)));
+  });
+}
+function deleteCard(id){
+  const el = board.querySelector(`.card[data-id="${id}"]`);
+  const done = () => { state.cards = state.cards.filter(c => c.id !== id); renderBoard(); updateAll(false); showToast("削除しました"); };
+  if (!el) { done(); return; }
+  el.classList.add("removing");
+  const h = el.getBoundingClientRect().height;
+  el.style.height = h + "px";
+  requestAnimationFrame(() => {
+    el.style.transition = "height .3s ease, opacity .3s ease, padding .3s ease, margin .3s ease";
+    el.style.height = "0px"; el.style.opacity = "0"; el.style.paddingTop = "0"; el.style.paddingBottom = "0";
+    setTimeout(done, 310);
+  });
+}
+
+/* ================= 追加フォーム ================= */
+function openAddForm(body, preset){
+  if (body.querySelector(".add-form")) { body.querySelector(".add-form input").focus(); return; }
+  const form = document.createElement("div"); form.className = "add-form";
+  form.innerHTML = `
+    <input type="text" placeholder="支出の名前（例：スーパー）" aria-label="支出の名前">
+    <input type="number" placeholder="金額（円）" min="0" step="10" aria-label="金額">
+    <select aria-label="カテゴリ">${Object.entries(CATS).map(([k,c]) => `<option value="${k}" ${preset === "fixed" && k === "B" ? "selected" : ""}>${c.label}</option>`).join("")}</select>
+    <input type="text" placeholder="支払日（任意・例：15日）" aria-label="支払日" value="${preset === "fixed" ? "" : ""}">
+    <div class="add-form-btns"><button type="button" class="af-add">追加</button><button type="button" class="af-cancel">キャンセル</button></div>`;
+  body.insertBefore(form, body.firstChild);
+  const [titleIn, amtIn, catSel, dueIn] = form.querySelectorAll("input,select");
+  titleIn.focus();
+  form.querySelector(".af-cancel").addEventListener("click", () => form.remove());
+  form.querySelector(".af-add").addEventListener("click", () => {
+    const title = titleIn.value.trim(); if (!title) { titleIn.focus(); return; }
+    const colId = body.closest(".column").dataset.col;
+    const card = { id: "c" + (++idSeq + 100), col: colId, title, amount: Math.max(0, +amtIn.value || 0),
+      cat: catSel.value, memo: preset === "fixed" ? "固定費" : preset === "memo" ? "メモ" : "手入力", due: dueIn.value.trim(), fav: preset === "fixed" };
+    state.cards.unshift(card);
+    form.remove(); renderBoard();
+    const el = board.querySelector(`.card[data-id="${card.id}"]`);
+    if (el) el.classList.add("spring");
+    updateAll(false); showToast("「" + title + "」を追加しました");
+  });
+}
+
+/* ================= 数値アニメーション（カンバン §7） ================= */
+function tweenNum(el, to, ms, fmt){
+  const from = parseFloat(el.dataset.v || "0");
+  if (from === to) { el.textContent = fmt(to); el.dataset.v = to; return; }
+  const t0 = performance.now();
+  (function step(t){
+    const p = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - p, 3);
+    const v = from + (to - from) * e;
+    el.textContent = fmt(Math.round(v));
+    if (p < 1) requestAnimationFrame(step); else el.dataset.v = to;
+  })(t0);
+}
+const donutState = {};
+function tweenDonut(key, pct){
+  const fg = donutsEl.querySelector(`[data-fgc="${key}"]`), num = donutsEl.querySelector(`[data-donutnum="${key}"]`);
+  const C = 188.4955, from = donutState[key] || 0, to = pct, t0 = performance.now();
+  donutState[key] = pct;
+  if (from === to) { fg.style.strokeDashoffset = C * (1 - to / 100); num.textContent = to; return; }
+  (function step(t){
+    const p = Math.min(1, (t - t0) / 700), e = 1 - Math.pow(1 - p, 3);
+    const v = Math.round(from + (to - from) * e);
+    fg.style.strokeDashoffset = C * (1 - v / 100); num.textContent = v;
+    if (p < 1) requestAnimationFrame(step);
+  })(t0);
+}
+
+/* ================= 集計・連動（カンバン §5 updateAll） ================= */
+function updateAll(bumpDone){
+  const cards = state.cards;
+  const total = cards.reduce((s,c) => s + c.amount, 0);
+  const doneCards = cards.filter(c => c.col === "done");
+  const doneTotal = doneCards.reduce((s,c) => s + c.amount, 0);
+  /* ① 件数バッジ＋列合計 */
+  COLS.forEach(col => {
+    const sec = board.querySelector(`.column[data-col="${col.id}"]`);
+    const list = cards.filter(c => c.col === col.id);
+    const cnt = sec.querySelector("[data-count]");
+    cnt.textContent = list.length;
+    if (bumpDone && col.id === "done") { cnt.classList.remove("bump"); void cnt.offsetWidth; cnt.classList.add("bump"); }
+    sec.querySelector("[data-colsum]").textContent = yen(list.reduce((s,c) => s + c.amount, 0));
+  });
+  /* サマリー */
+  tweenNum($("#sum-income"), state.income, 600, yen);
+  tweenNum($("#sum-total"), total, 600, yen);
+  tweenNum($("#sum-done"), doneTotal, 600, yen);
+  tweenNum($("#sum-rest"), state.income - total, 600, yen);
+  $("#sum-done-note").textContent = doneCards.length + "件 完了";
+  const usage = state.income > 0 ? Math.round(total / state.income * 100) : 0;
+  const pf = $("#sum-progress");
+  pf.style.width = Math.min(100, usage) + "%"; pf.classList.toggle("over", usage > 100);
+  $("#sum-progress-note").textContent = "収入に対して " + usage + "%";
+  /* ② 棒グラフ：カテゴリ別 精算済み金額 */
+  const doneByCat = {}, totalByCat = {};
+  Object.keys(CATS).forEach(k => { doneByCat[k] = 0; totalByCat[k] = 0; });
+  cards.forEach(c => { totalByCat[c.cat] += c.amount; if (c.col === "done") doneByCat[c.cat] += c.amount; });
+  const maxDone = Math.max(1, ...Object.values(doneByCat));
+  Object.keys(CATS).forEach(k => {
+    const bar = barsEl.querySelector(`[data-bar="${k}"]`);
+    bar.style.height = (doneByCat[k] === 0 ? 0 : Math.round(doneByCat[k] / maxDone * 100)) + "px";
+    tweenNum(barsEl.querySelector(`[data-barnum="${k}"]`), doneByCat[k], 600, yen);
+    /* ③ 円グラフ：予算使用率 */
+    const pct = state.budgets[k] > 0 ? Math.min(100, Math.round(totalByCat[k] / state.budgets[k] * 100)) : 0;
+    tweenDonut(k, pct);
+  });
+  /* ④ 支払い予定 */
+  const sched = $("#schedule"); sched.innerHTML = "";
+  const dueCards = cards.filter(c => c.due).sort((a,b) => (parseInt(a.due) || 99) - (parseInt(b.due) || 99));
+  if (!dueCards.length) sched.innerHTML = `<div class="sched-empty">支払日つきの支出はありません</div>`;
+  dueCards.forEach(c => {
+    const row = document.createElement("div");
+    row.className = "sched-row" + (c.col === "done" ? " done" : "");
+    row.style.setProperty("--c", CATS[c.cat].color);
+    row.innerHTML = `<time>毎月${escapeHtml(c.due)}</time><div><strong>${escapeHtml(c.title)}</strong><span>${CATS[c.cat].label}</span></div><span class="sched-amt">${yen(c.amount)}</span><span class="sched-check">✓</span>`;
+    sched.appendChild(row);
+  });
+  $("#due-badge").textContent = cards.filter(c => c.due && c.col !== "done").length;
+  /* ⑤ 完了バナー */
+  $("#banner").classList.toggle("show", cards.length > 0 && cards.every(c => c.col === "done"));
+  renderList(); renderAnalysis(); save();
+}
+
+/* ================= 明細リスト ================= */
+function renderList(){
+  const tb = $("#list-body"); tb.innerHTML = "";
+  const colName = id => COLS.find(c => c.id === id).title;
+  const colColor = id => COLS.find(c => c.id === id).accent;
+  const rows = state.cards.filter(c => (!filterCat || c.cat === filterCat) && (!searchText || c.title.includes(searchText)));
+  rows.forEach(c => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${escapeHtml(c.title)}</td><td>${CATS[c.cat].label}</td>
+      <td><span class="status-tag" style="background:${colColor(c.col)}">${colName(c.col)}</span></td>
+      <td>${c.due ? "毎月" + escapeHtml(c.due) : "—"}</td><td class="amt">${yen(c.amount)}</td>`;
+    tb.appendChild(tr);
+  });
+  $("#list-empty").style.display = rows.length ? "none" : "block";
+  document.querySelectorAll(".card").forEach(el => {
+    const card = state.cards.find(c => c.id === el.dataset.id); if (card) applyDim(el, card);
+  });
+}
+$("#search").addEventListener("input", e => { searchText = e.target.value.trim(); renderList(); });
+document.querySelectorAll("#ex-nav .ex-it").forEach(btn => btn.addEventListener("click", () => {
+  document.querySelectorAll("#ex-nav .ex-it").forEach(b => b.classList.remove("on"));
+  btn.classList.add("on"); filterCat = btn.dataset.filter; renderList();
+}));
+document.querySelectorAll("#dock .dk-it").forEach(btn => btn.addEventListener("click", () => {
+  const cat = btn.dataset.cat;
+  filterCat = cat;
+  document.querySelectorAll("#dock .dk-it").forEach(b => b.classList.toggle("sel", b === btn && !!cat));
+  document.querySelectorAll("#ex-nav .ex-it").forEach(b => b.classList.toggle("on", b.dataset.filter === cat));
+  renderList();
+  document.getElementById("board-sec").scrollIntoView({behavior:"smooth", block:"start"});
+}));
+
+/* ================= 分析（06 Liquid Tab 連動） ================= */
+function renderAnalysis(){
+  const panel = $("#ana-panel"); panel.innerHTML = "";
+  const f = PERIOD_FACTOR[period];
+  const totals = {}; Object.keys(CATS).forEach(k => totals[k] = 0);
+  state.cards.forEach(c => totals[c.cat] += c.amount);
+  const max = Math.max(1, ...Object.values(totals));
+  Object.entries(CATS).forEach(([k, cat]) => {
+    const v = Math.round(totals[k] * f);
+    const row = document.createElement("div"); row.className = "ana-row";
+    row.innerHTML = `<div class="ana-head"><span>${cat.label}（${PERIOD_LABEL[period]}）</span><b>${yen(v)}</b></div>
+      <div class="ana-track"><div class="ana-fill" style="background:${cat.color};width:${Math.round(totals[k] / max * 100)}%"></div></div>`;
+    panel.appendChild(row);
+  });
+  $("#pl-title").textContent = PERIOD_LABEL[period] + "の家計ブリーフィング（サンプル再生）";
+}
+function moveLiquid(){
+  const active = document.querySelector("#lt-tabs .tb.on"); if (!active) return;
+  const blob = $("#lt-blob"), tabs = $("#lt-tabs");
+  const tr = tabs.getBoundingClientRect(), br = active.getBoundingClientRect();
+  blob.style.width = br.width + "px";
+  blob.style.transform = `translateX(${br.left - tr.left}px)`;
+}
+document.querySelectorAll("#lt-tabs .tb").forEach(btn => btn.addEventListener("click", () => {
+  document.querySelectorAll("#lt-tabs .tb").forEach(b => b.classList.remove("on"));
+  btn.classList.add("on"); period = +btn.dataset.period; moveLiquid(); renderAnalysis();
+}));
+window.addEventListener("resize", moveLiquid);
+
+/* Glass Player */
+let playing = false;
+$("#pl-btn").addEventListener("click", () => {
+  playing = !playing;
+  $("#pl-btn").classList.toggle("playing", playing);
+  $("#pl-disc").classList.toggle("playing", playing);
+  $("#pl-fill").classList.toggle("playing", playing);
+  $("#pl-eq").classList.toggle("playing", playing);
+});
+
+/* ================= ナビ 01 Slide Pill（公開版：タブ切替） ================= */
+const TAB_PANELS = {board:"panel-board", list:"list-sec", analysis:"analysis-sec", settings:"settings-sec"};
+function showTab(name, pushHash){
+  if (!TAB_PANELS[name]) name = "board";
+  document.querySelectorAll(".sp-items .it").forEach(b => {
+    const on = b.dataset.tab === name;
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-selected", on ? "true" : "false");
+    if (on) $("#sp-ind").style.transform = `translateX(${+b.dataset.nav * 84}px)`;
+  });
+  Object.entries(TAB_PANELS).forEach(([k, id]) => document.getElementById(id).classList.toggle("active", k === name));
+  /* 分析タブ：表示直後に Liquid Tab の下線の位置と幅を取り直す（非表示中の計測ずれ対策） */
+  if (name === "analysis") {
+    const blob = $("#lt-blob");
+    blob.style.transition = "none"; moveLiquid(); void blob.offsetWidth; blob.style.transition = "";
+  }
+  if (pushHash && location.hash !== "#" + name) history.pushState(null, "", "#" + name);
+}
+document.querySelectorAll(".sp-items .it").forEach(btn => btn.addEventListener("click", () => showTab(btn.dataset.tab, true)));
+/* 上部ツールバー（Hop）のリンクもタブ切替に */
+document.querySelectorAll("a[data-tab]").forEach(a => a.addEventListener("click", e => { e.preventDefault(); showTab(a.dataset.tab, true); }));
+function tabFromHash(){ const h = location.hash.replace("#", ""); return TAB_PANELS[h] ? h : "board"; }
+window.addEventListener("popstate", () => showTab(tabFromHash(), false));
+window.addEventListener("hashchange", () => showTab(tabFromHash(), false));
+
+/* ================= ナビ 03 Center Action ================= */
+const caBtn = $("#ca-btn"), caFan = $("#ca-fan");
+caBtn.addEventListener("click", () => {
+  caBtn.classList.add("press");
+  setTimeout(() => caBtn.classList.remove("press"), 180);
+  const open = caFan.classList.toggle("open");
+  caBtn.classList.toggle("open", open);
+});
+document.querySelectorAll(".ca-fan .f").forEach(f => f.addEventListener("click", () => {
+  caFan.classList.remove("open"); caBtn.classList.remove("open");
+  const firstBody = board.querySelector(`.column[data-col="todo"] .col-body`);
+  showTab("board", true);
+  document.getElementById("board-sec").scrollIntoView({behavior:"smooth"});
+  setTimeout(() => openAddForm(firstBody, f.dataset.add), 350);
+}));
+
+/* ================= 設定ボタン ================= */
+$("#btn-report").addEventListener("click", () => showToast("月次レポートを作成しました（サンプル）"));
+$("#btn-reset").addEventListener("click", () => {
+  state = JSON.parse(JSON.stringify(SAMPLE));
+  idSeq = 100; syncBudgetInputs(); renderBoard(); updateAll(false); showToast("サンプルデータに戻しました");
+});
+
+/* ================= トースト ================= */
+let toastTimer;
+function showToast(msg){
+  $("#toast-text").textContent = msg;
+  const t = $("#toast"); t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2400);
+}
+
+/* ================= ドラッグ＆ドロップ（カンバン §7-2） ================= */
+function attachDrag(el){
+  el.addEventListener("pointerdown", e => {
+    if (e.button !== undefined && e.button !== 0) return;
+    if (e.target.closest("button")) return;
+    const startX = e.clientX, startY = e.clientY;
+    const rect = el.getBoundingClientRect();
+    const offX = startX - rect.left, offY = startY - rect.top;
+    let dragging = false, placeholder = null;
+    function onMove(ev){
+      const dx = ev.clientX - startX, dy = ev.clientY - startY;
+      if (!dragging && Math.hypot(dx, dy) >= 6){
+        dragging = true;
+        placeholder = document.createElement("div");
+        placeholder.className = "placeholder"; placeholder.style.height = rect.height + "px";
+        el.parentNode.insertBefore(placeholder, el);
+        document.body.appendChild(el);
+        el.classList.add("dragging");
+        Object.assign(el.style, {position:"fixed", left:rect.left + "px", top:rect.top + "px",
+          width:rect.width + "px", height:rect.height + "px", margin:"0", transform:"scale(1.03)"});
+        document.body.classList.add("drag-active");
+      }
+      if (!dragging) return;
+      ev.preventDefault();
+      el.style.left = (ev.clientX - offX) + "px";
+      el.style.top = (ev.clientY - offY) + "px";
+      /* 列の判定：矩形を左右6px・上下20pxに拡大 */
+      let targetBody = null;
+      document.querySelectorAll(".col-body").forEach(body => {
+        const r = body.getBoundingClientRect();
+        body.classList.remove("over");
+        if (!targetBody && ev.clientX >= r.left - 6 && ev.clientX <= r.right + 6 && ev.clientY >= r.top - 20 && ev.clientY <= r.bottom + 20) targetBody = body;
+      });
+      if (targetBody){
+        targetBody.classList.add("over");
+        const siblings = [...targetBody.querySelectorAll(".card")];
+        let before = null;
+        for (const s of siblings){ const r = s.getBoundingClientRect(); if (ev.clientY < r.top + r.height / 2) { before = s; break; } }
+        const oldPos = new Map(siblings.map(s => [s, s.getBoundingClientRect().top]));
+        if (before) targetBody.insertBefore(placeholder, before); else targetBody.appendChild(placeholder);
+        /* FLIP：ずれたカードを250msで滑らせる */
+        siblings.forEach(s => {
+          const dyv = oldPos.get(s) - s.getBoundingClientRect().top;
+          if (dyv !== 0){
+            s.style.transition = "none"; s.style.transform = `translateY(${dyv}px)`;
+            requestAnimationFrame(() => { s.style.transition = "transform .25s cubic-bezier(.22,1,.36,1)"; s.style.transform = "translateY(0)";
+              setTimeout(() => { s.style.transition = ""; s.style.transform = ""; }, 290); });
+          }
+        });
+      }
+    }
+    function onUp(){
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
+      document.removeEventListener("pointercancel", onUp);
+      if (!dragging) return;
+      const card = state.cards.find(c => c.id === el.dataset.id);
+      const prevCol = card.col;
+      const parentBody = placeholder.parentNode;
+      parentBody.insertBefore(el, placeholder);
+      placeholder.remove();
+      el.classList.remove("dragging");
+      el.style.cssText = ""; el.style.setProperty("--d", "0ms");
+      document.querySelectorAll(".col-body").forEach(b => b.classList.remove("over"));
+      document.body.classList.remove("drag-active");
+      card.col = parentBody.closest(".column").dataset.col;
+      /* stateの並び順をDOMに合わせる */
+      const order = [...board.querySelectorAll(".card")].map(n => n.dataset.id);
+      state.cards.sort((a,b) => order.indexOf(a.id) - order.indexOf(b.id));
+      el.classList.toggle("is-done", card.col === "done");
+      updateAll(prevCol !== "done" && card.col === "done");
+    }
+    document.addEventListener("pointermove", onMove, {passive:false});
+    document.addEventListener("pointerup", onUp);
+    document.addEventListener("pointercancel", onUp);
+  });
+}
+
+/* ================= 初期化 ================= */
+syncBudgetInputs();
+renderBoard();
+updateAll(false);
+showTab(tabFromHash(), false);
+requestAnimationFrame(() => { moveLiquid(); });
+</script>
+</body>
+</html>

@@ -6,8 +6,8 @@
   "use strict";
   var S = window.Shindan;
 
-  // ▼ 公開前に確認：診断経由の友だち追加を数えるなら、LINE公式アカウント側で発行した診断専用URLに差し替える
-  var LINE_URL = "https://lin.ee/vWNKtBL";
+  // 診断専用の友だち追加URL（LINE公式アカウント側で診断経由の追加を区別するため）
+  var LINE_URL = "https://lin.ee/wvWY1Xo";
   var PAGE_URL = "https://t0t005081114-hue.github.io/shindan/";
   var TYPE_COLOR = { A: "--tA", B: "--tB", C: "--tC", D: "--tD", E: "--tE" };
 

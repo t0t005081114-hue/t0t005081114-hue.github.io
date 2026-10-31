@@ -112,7 +112,7 @@ async function answerAll(page, pattern) {
       ok(`${P}[${t}] 結果見出しにフォーカス`, info.focus === "res-h");
       ok(`${P}[${t}] Day1〜7 が7件・各日に完了条件`, info.days.length === 7 && info.days.every((d, i) => d.t.startsWith("Day " + (i + 1)) && d.ok.length > 3), info.days.length);
       ok(`${P}[${t}] 機能・理由・制作指示・完成イメージ・つまずき・点数バー`, info.feat >= 4 && info.reasons >= 1 && info.prompt.includes(S.TYPES[t].tool) && info.mock === 3 && info.pits === 3 && info.bars === 5, info);
-      ok(`${P}[${t}] LINE / X / Threads のリンク形式`, info.line === "https://lin.ee/vWNKtBL" && info.x.startsWith("https://x.com/intent/tweet?text=") && info.th.startsWith("https://www.threads.net/intent/post?text="));
+      ok(`${P}[${t}] LINE / X / Threads のリンク形式`, info.line === "https://lin.ee/wvWY1Xo" && info.x.startsWith("https://x.com/intent/tweet?text=") && info.th.startsWith("https://www.threads.net/intent/post?text="));
       ok(`${P}[${t}] 横スクロールが出ない`, info.hscroll <= 0, info.hscroll);
       for (const href of info.exLinks) ok(`${P}[${t}] 作例リンク ${href} が実在`, fs.existsSync(path.join(__dirname, "../../../shindan", href, "index.html")));
       // 全セクションをスクロールして表示 → スクリーンショット
@@ -140,7 +140,7 @@ async function answerAll(page, pattern) {
 
     // すべてのリンク
     const links = await page.evaluate(() => [...document.querySelectorAll("a[href]")].map(a => a.getAttribute("href")));
-    const allowedExt = [/^https:\/\/lin\.ee\/vWNKtBL$/, /^https:\/\/x\.com\/intent\/tweet\?/, /^https:\/\/www\.threads\.net\/intent\/post\?/];
+    const allowedExt = [/^https:\/\/lin\.ee\/wvWY1Xo$/, /^https:\/\/x\.com\/intent\/tweet\?/, /^https:\/\/www\.threads\.net\/intent\/post\?/];
     const bad = links.filter(h => /^https?:/.test(h) ? !allowedExt.some(r => r.test(h)) : !fs.existsSync(path.join(__dirname, "../../../shindan", h.split("#")[0], h.endsWith("/") ? "index.html" : "")));
     ok(`${P} リンク切れ・想定外の外部リンクがない`, bad.length === 0 && !links.includes("#"), bad);
 

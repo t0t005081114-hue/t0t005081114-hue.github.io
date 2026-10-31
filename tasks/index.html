@@ -153,6 +153,8 @@ legend{font-size:14px;font-weight:700;padding:0;margin-bottom:6px}
 .chip[aria-pressed="true"]::before{content:"✓"}
 
 /* フッター */
+.recover{background:var(--surface);border:2px solid var(--warn);border-radius:14px;padding:12px 14px;margin-bottom:16px}
+.recover p{margin:0 0 8px;font-size:15px}
 .foot{margin-top:28px;padding:14px;border-top:1px solid var(--line);font-size:14px;color:var(--muted);text-align:center}
 .foot a{color:var(--primary);font-weight:700}
 
@@ -214,7 +216,7 @@ legend{font-size:14px;font-weight:700;padding:0;margin-bottom:6px}
 .tpl-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
 .tpl-item .t{font-weight:700}
 .tpl-item .d{grid-column:1 / 2;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:14px}
-.tpl-item .d input{min-height:40px;font-size:15px}
+.tpl-item .d input{min-height:44px;font-size:15px}
 .tpl-item .act{grid-row:1 / 3;grid-column:2}
 .added{font-size:14px;font-weight:800;color:var(--primary);padding:0 8px}
 details.past summary{min-height:44px;display:flex;align-items:center;font-weight:700;cursor:pointer}
@@ -238,10 +240,14 @@ details.past summary{min-height:44px;display:flex;align-items:center;font-weight
 <body>
 <div class="wrap" id="app">
   <main id="main">
+    <div class="recover" id="recover" role="alert" hidden>
+      <p id="recover-msg"></p>
+      <div class="sheet-actions"><button class="btn btn-ghost" id="recover-export">元データを書き出す</button><button class="btn btn-primary" id="recover-ok">閉じる</button></div>
+    </div>
     <!-- 今日 -->
     <section class="tab-panel active" id="panel-today" role="tabpanel" aria-labelledby="tab-today">
       <div class="top">
-        <h1 class="date" id="today-date">今日</h1>
+        <h1 class="date" id="today-date" tabindex="-1">今日</h1>
         <span class="age" id="today-age" hidden></span>
       </div>
       <div class="notice" id="notice" hidden aria-live="polite">
@@ -260,7 +266,7 @@ details.past summary{min-height:44px;display:flex;align-items:center;font-weight
 
     <!-- 予定 -->
     <section class="tab-panel" id="panel-schedule" role="tabpanel" aria-labelledby="tab-schedule">
-      <div class="top"><h1>予定</h1></div>
+      <div class="top"><h1 tabindex="-1">予定</h1></div>
       <div class="week-head">
         <span class="range" id="week-range"></span>
         <div class="week-nav">
@@ -279,7 +285,7 @@ details.past summary{min-height:44px;display:flex;align-items:center;font-weight
 
     <!-- 家族 -->
     <section class="tab-panel" id="panel-family" role="tabpanel" aria-labelledby="tab-family">
-      <div class="top"><h1>家族</h1></div>
+      <div class="top"><h1 tabindex="-1">家族</h1></div>
       <div class="members" id="members"></div>
       <section class="sec card" aria-labelledby="handover-h">
         <h2 id="handover-h">引き継ぎ</h2>
@@ -302,7 +308,7 @@ details.past summary{min-height:44px;display:flex;align-items:center;font-weight
 
     <!-- 設定 -->
     <section class="tab-panel" id="panel-settings" role="tabpanel" aria-labelledby="tab-settings">
-      <div class="top"><h1>設定</h1></div>
+      <div class="top"><h1 tabindex="-1">設定</h1></div>
       <section class="card" aria-labelledby="child-h">
         <h2 id="child-h">子ども</h2>
         <div class="set-row">
@@ -385,7 +391,6 @@ details.past summary{min-height:44px;display:flex;align-items:center;font-weight
     <div class="title-row">
       <label class="sr" for="add-title">やること</label>
       <input id="add-title" type="text" placeholder="例：おしりふきを買う" maxlength="60" enterkeyhint="done" required>
-      <button type="button" class="btn btn-ghost" id="voice-btn" aria-label="音声で入力" hidden>🎤</button>
     </div>
     <fieldset><legend>担当</legend><div class="chips" id="add-assignee"></div></fieldset>
     <fieldset><legend>期限</legend>
@@ -460,7 +465,8 @@ const addDays = (s, n) => { const d = parseD(s); d.setDate(d.getDate() + n); ret
 const diffDays = (a, b) => { const A = parseD(a), B = parseD(b); return Math.round((Date.UTC(B.getFullYear(), B.getMonth(), B.getDate()) - Date.UTC(A.getFullYear(), A.getMonth(), A.getDate())) / 864e5); };
 const md = s => { const d = parseD(s); return `${d.getMonth() + 1}月${d.getDate()}日`; };
 const mdw = s => { const d = parseD(s); return `${d.getMonth() + 1}月${d.getDate()}日（${WD[d.getDay()]}）`; };
-const isDate = s => typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
+/* 形式だけでなく実在する日か（2026-02-30 などは不可）も確認 */
+const isDate = s => { if (typeof s !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false; const [y, m, d] = s.split("-").map(Number); const x = new Date(y, m - 1, d); return x.getFullYear() === y && x.getMonth() === m - 1 && x.getDate() === d; };
 
 /* ================= データ ================= */
 function defaultSettings(){ return {actorId:"m1", notify:{procedure:"instant", general:"digest", supply:"digest"}}; }
@@ -493,23 +499,101 @@ function sampleState(){
   });
   return s;
 }
-function load(){
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (raw) {
-      const s = JSON.parse(raw);
-      if (s && Array.isArray(s.members) && Array.isArray(s.tasks) && Array.isArray(s.events) && s.members.length) {
-        s.child = s.child || {date:null, kind:"birth"};
-        s.settings = Object.assign(defaultSettings(), s.settings || {});
-        s.settings.notify = Object.assign(defaultSettings().notify, s.settings.notify || {});
-        return s;
-      }
+/* ---------- 保存データの検証と補正 ---------- */
+const BACKUP_KEY = KEY + "-backup";   /* 修復前の元データの退避先（1件だけ。既にあれば上書きしない） */
+const isObj = v => v !== null && typeof v === "object" && !Array.isArray(v);
+const isTime = v => typeof v === "string" && v !== "" && !isNaN(Date.parse(v));
+const TYPES = ["create", "assign", "due", "complete", "undo"];
+/* 返り値：{state, issues}。issues が空なら元データのまま */
+function sanitize(raw){
+  const issues = [], note = m => issues.push(m);
+  if (!isObj(raw)) throw new Error("root");
+  const s = {version:1, onboarded:raw.onboarded !== false, members:[], child:{date:null, kind:"birth"}, tasks:[], events:[], settings:defaultSettings()};
+  if (raw.version !== 1) note("version");
+  if (typeof raw.onboarded !== "boolean") note("onboarded");
+  /* メンバー：id 重複なし・名前必須・最大4人・ドットの形は重複なし */
+  const ids = new Set(), styles = new Set();
+  (Array.isArray(raw.members) ? raw.members : (note("members"), [])).forEach(m => {
+    if (!isObj(m) || typeof m.id !== "string" || !m.id || ids.has(m.id) || typeof m.name !== "string" || !m.name.trim() || s.members.length >= MAX_MEMBERS) { note("member"); return; }
+    let style = Number.isInteger(m.style) && m.style >= 0 && m.style <= 3 && !styles.has(m.style) ? m.style : null;
+    if (style === null) { style = [0, 1, 2, 3].find(x => !styles.has(x)); note("member.style"); }
+    const name = m.name.trim().slice(0, 12), role = typeof m.role === "string" ? m.role.slice(0, 24) : (note("member.role"), "");
+    if (name !== m.name || role !== m.role) note("member.text");
+    ids.add(m.id); styles.add(style);
+    s.members.push({id:m.id, name, role, style});
+  });
+  if (!s.members.length) { s.members = defaultMembers(); note("members.empty"); }
+  /* 子ども */
+  const c = isObj(raw.child) ? raw.child : (note("child"), {});
+  s.child.kind = c.kind === "due" ? "due" : "birth"; if (c.kind !== s.child.kind) note("child.kind");
+  s.child.date = isDate(c.date) ? c.date : null; if (c.date != null && !s.child.date) note("child.date");
+  /* 設定 */
+  const st = isObj(raw.settings) ? raw.settings : (note("settings"), {});
+  s.settings.actorId = s.members.some(m => m.id === st.actorId) ? st.actorId : (note("settings.actor"), s.members[0].id);
+  const nt = isObj(st.notify) ? st.notify : (note("settings.notify"), {});
+  Object.keys(KINDS).forEach(k => { if (NOTIFY[nt[k]]) s.settings.notify[k] = nt[k]; else note("settings.notify." + k); });
+  /* タスク */
+  const tids = new Set(), nowIso = new Date().toISOString();
+  (Array.isArray(raw.tasks) ? raw.tasks : (note("tasks"), [])).forEach(t => {
+    if (!isObj(t) || typeof t.title !== "string" || !t.title.trim()) { note("task"); return; }
+    let id = typeof t.id === "string" && t.id && !tids.has(t.id) ? t.id : (note("task.id"), uid());
+    while (tids.has(id)) id = uid();
+    tids.add(id);
+    const x = {id, title:t.title.trim().slice(0, 60), assigneeId:null, due:null, repeat:"none", kind:"general", tpl:null, done:t.done === true, doneAt:null,
+      createdAt:isTime(t.createdAt) ? t.createdAt : nowIso, updatedAt:isTime(t.updatedAt) ? t.updatedAt : nowIso};
+    if (x.title !== t.title || typeof t.done !== "boolean" || !isTime(t.createdAt) || !isTime(t.updatedAt)) note("task.fields");
+    if (t.assigneeId != null) { if (s.members.some(m => m.id === t.assigneeId)) x.assigneeId = t.assigneeId; else note("task.assignee"); }
+    if (t.due != null) {
+      if (isObj(t.due) && isDate(t.due.date)) { x.due = {date:t.due.date, slot:t.due.slot === "tonight" ? "tonight" : "day"}; if (t.due.slot !== x.due.slot) note("task.slot"); }
+      else note("task.due");
     }
-  } catch (e) { /* 壊れたデータはサンプルで作り直す */ }
-  return sampleState();
+    x.repeat = ["none", "daily", "weekly"].includes(t.repeat) ? t.repeat : (note("task.repeat"), "none");
+    x.kind = KINDS[t.kind] ? t.kind : (note("task.kind"), "general");
+    x.tpl = typeof t.tpl === "string" ? t.tpl : (t.tpl != null && note("task.tpl"), null);
+    if (x.done) { x.doneAt = isTime(t.doneAt) ? t.doneAt : x.updatedAt; if (x.repeat !== "none") { x.repeat = "none"; note("task.doneRepeat"); } }
+    if (x.repeat !== "none" && !x.due) { x.due = {date:todayStr(), slot:"day"}; note("task.repeatDue"); }  /* 繰り返しには期限が必須 */
+    s.tasks.push(x);
+  });
+  /* 履歴：種別・時刻・タスクIDが正しいものだけ（削除済みタスクの履歴は残す） */
+  const eids = new Set();
+  (Array.isArray(raw.events) ? raw.events : (note("events"), [])).forEach(e => {
+    if (!isObj(e) || !TYPES.includes(e.type) || typeof e.taskId !== "string" || !isTime(e.at)) { note("event"); return; }
+    let id = typeof e.id === "string" && e.id && !eids.has(e.id) ? e.id : (note("event.id"), uid());
+    while (eids.has(id)) id = uid();
+    eids.add(id);
+    const ev = {id, taskId:e.taskId, type:e.type, by:typeof e.by === "string" ? e.by : "", byName:typeof e.byName === "string" ? e.byName : "", at:e.at, title:typeof e.title === "string" ? e.title : ""};
+    if (e.type === "assign" || e.type === "due") { ev.from = typeof e.from === "string" ? e.from : ""; ev.to = typeof e.to === "string" ? e.to : ""; }
+    s.events.push(ev);
+  });
+  return {state:s, issues};
+}
+/* 起動時の読み込み。修復が必要なときは、元データを退避してから使う */
+let persistBlocked = false;      /* true の間は保存しない（元データを守るため） */
+let recovery = null;             /* {raw, backedUp, reason} 修復時だけ */
+function load(){
+  let raw = null;
+  try { raw = localStorage.getItem(KEY); } catch (e) { return sampleState(); }
+  if (raw === null) return sampleState();             /* はじめての表示 */
+  let result = null, reason = "";
+  try { result = sanitize(JSON.parse(raw)); } catch (e) { reason = "broken"; }
+  if (result && !result.issues.length) return result.state;
+  if (result) reason = "repaired";
+  /* 元データを退避。既に別の退避があれば上書きせず、保存を止める */
+  let backedUp = false;
+  try {
+    const prev = localStorage.getItem(BACKUP_KEY);
+    if (prev === null || prev === raw) { localStorage.setItem(BACKUP_KEY, raw); backedUp = localStorage.getItem(BACKUP_KEY) === raw; }
+  } catch (e) { backedUp = false; }
+  persistBlocked = !backedUp || reason === "broken";   /* 読めないデータは、利用者が選ぶまで保存しない */
+  recovery = {raw, backedUp, reason, issues:result ? result.issues.length : 0};
+  if (result) return result.state;
+  const s = sampleState(); s.onboarded = true; return s;   /* 読めないデータは表示だけサンプル（元データは退避済み／保存停止） */
 }
 let state = load();
-function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* 容量超過など */ } }
+function save(){
+  if (persistBlocked) return false;
+  try { localStorage.setItem(KEY, JSON.stringify(state)); return true; } catch (e) { return false; }
+}
 save();
 
 const member = id => state.members.find(m => m.id === id) || null;
@@ -522,9 +606,12 @@ function logEvent(task, type, extra = {}){
   const a = actor();
   state.events.push({id:uid(), taskId:task.id, type, by:a.id, byName:a.name, at:new Date().toISOString(), title:task.title, ...extra});
 }
-function dueText(due){
+const dueEq = (a, b) => (!a || !a.date) ? (!b || !b.date) : (!!b && !!b.date && a.date === b.date && (a.slot || "day") === (b.slot || "day"));
+/* 表示用（比較には使わない）。今年以外の日付・年をまたぐ変更では年も出す */
+function dueText(due, withYear = false){
   if (!due || !due.date) return "なし";
-  return (due.slot === "tonight" ? "夜・" : "") + md(due.date);
+  const y = parseD(due.date).getFullYear();
+  return (due.slot === "tonight" ? "夜・" : "") + (withYear || y !== new Date().getFullYear() ? y + "年" : "") + md(due.date);
 }
 function addTask({title, assigneeId = null, due = null, repeat = "none", kind = "general", tpl = null}){
   const now = new Date().toISOString();
@@ -542,35 +629,55 @@ function updateTask(id, patch){
   }
   if ("due" in patch) {
     const nd = patch.due && patch.due.date ? patch.due : null;
-    if (dueText(nd) !== dueText(t.due)) { logEvent(t, "due", {from:dueText(t.due), to:dueText(nd)}); }
+    if (!dueEq(nd, t.due)) {
+      const yearDiff = !!(nd && t.due && t.due.date && nd.date.slice(0, 4) !== t.due.date.slice(0, 4));
+      logEvent(t, "due", {from:dueText(t.due, yearDiff), to:dueText(nd, yearDiff)});
+    }
     t.due = nd;
   }
   if ("title" in patch && patch.title.trim()) t.title = patch.title.trim().slice(0, 60);
   if ("repeat" in patch) { t.repeat = patch.repeat; if (t.repeat !== "none" && !t.due) t.due = {date:todayStr(), slot:"day"}; }
   t.updatedAt = new Date().toISOString();
 }
-/* 完了：繰り返しタスクは実体1つのまま、期限を次の回へ進める */
-function completeTask(id){
-  const t = state.tasks.find(x => x.id === id); if (!t) return null;
-  const snap = JSON.parse(JSON.stringify(t));
+/* 完了：繰り返しタスクは実体1つのまま、期限を次の回へ進める。
+   expectDate：画面に出ていた期限。繰り返しで既に進んでいれば二重完了なので何もしない。
+   返り値：取消用の情報（完了で変えた項目だけ）。完了できなければ null */
+function completeTask(id, expectDate){
+  const t = state.tasks.find(x => x.id === id); if (!t || t.done) return null;
   const now = new Date().toISOString();
-  logEvent(t, "complete");
+  let undo;
   if (t.repeat !== "none") {
+    if (!t.due || !t.due.date) return null;
+    if (expectDate !== undefined && expectDate !== t.due.date) return null;
     const step = t.repeat === "daily" ? 1 : 7, today = todayStr();
     let next = addDays(t.due.date, step);
-    while (next <= today) next = addDays(next, step);
-    t.due = {date:next, slot:t.due.slot};
-  } else { t.done = true; t.doneAt = now; }
+    while (next <= today) next = addDays(next, step);   /* 期限切れでも元の周期のまま今日より後へ */
+    undo = {id, kind:"repeat", prevDue:{...t.due}, nextDue:{date:next, slot:t.due.slot}, prevUpdatedAt:t.updatedAt};
+    t.due = {...undo.nextDue};
+  } else {
+    undo = {id, kind:"done", doneAt:now, prevUpdatedAt:t.updatedAt};
+    t.done = true; t.doneAt = now;
+  }
+  logEvent(t, "complete");
   t.updatedAt = now;
   save();
-  return snap;
+  return undo;
 }
-function undoComplete(snap){
-  const i = state.tasks.findIndex(x => x.id === snap.id);
-  if (i < 0) return;
-  state.tasks[i] = snap;
-  logEvent(snap, "undo");
+/* 取消：完了で変えた項目だけを戻す。その後に状態が変わっていたら戻さない（履歴も残さない） */
+function undoComplete(u){
+  const t = state.tasks.find(x => x.id === u.id); if (!t) return false;
+  if (u.kind === "done") {
+    if (!t.done || t.doneAt !== u.doneAt) return false;
+    t.done = false; t.doneAt = null;
+  } else {
+    if (t.done || t.repeat === "none" || !dueEq(t.due, u.nextDue)) return false;
+    t.due = {...u.prevDue};
+  }
+  if (t.assigneeId && !member(t.assigneeId)) t.assigneeId = null;   /* 念のため現在のメンバーと整合 */
+  t.updatedAt = new Date().toISOString();
+  logEvent(t, "undo");
   save();
+  return true;
 }
 
 /* ================= 表示用ヘルパー ================= */
@@ -603,7 +710,7 @@ function taskRow(t, opt = {}){
   const dl = dueLabel(t, opt.onDate);
   const canCheck = !t.done && opt.check !== false;
   const lead = t.done ? `<span class="done-mark">完了</span>`
-    : canCheck ? `<button class="chk" data-act="complete" data-id="${t.id}" aria-label="「${esc(t.title)}」を完了にする"><span class="box"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></button>`
+    : canCheck ? `<button class="chk" data-act="complete" data-id="${t.id}" data-due="${t.due ? t.due.date : ""}" aria-label="「${esc(t.title)}」を完了にする"><span class="box"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></button>`
     : `<span class="done-mark" aria-hidden="true">↻</span>`;
   const rep = t.repeat === "daily" ? `<span class="rep">毎日</span>` : t.repeat === "weekly" ? `<span class="rep">毎週</span>` : "";
   return `<li class="task${dl.late ? " overdue" : ""}${t.done ? " done" : ""}" data-row="${t.id}">
@@ -794,12 +901,46 @@ $("#ntf").addEventListener("click", e => {
   state.settings.notify[b.dataset.ntf] = b.dataset.lv; save(); renderSettings(); renderToday();
   $(`[data-ntf="${b.dataset.ntf}"][data-lv="${b.dataset.lv}"]`).focus();
 });
-$("#export").addEventListener("click", () => {
-  const blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
+function downloadText(text, name){
+  const blob = new Blob([text], {type:"application/json"});
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob); a.download = `family-tasks-${todayStr().replace(/-/g, "")}.json`;
+  a.href = URL.createObjectURL(blob); a.download = name;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+$("#export").addEventListener("click", () => downloadText(JSON.stringify(state, null, 2), `family-tasks-${todayStr().replace(/-/g, "")}.json`));
+
+/* 保存データの修復のお知らせ（元データの書き出しは、既存の書き出しと同じ方法） */
+function renderRecovery(){
+  const box = $("#recover");
+  if (!recovery) { box.hidden = true; return; }
+  const r = recovery;
+  let msg, ok;
+  if (r.reason === "broken") {
+    msg = "保存データが壊れていて読めませんでした。いまはサンプルを表示しています。元のデータは消していません。この状態の変更は保存されません。";
+    ok = "サンプルで使い始める";
+  } else if (r.backedUp) {
+    msg = `保存データの一部（${r.issues}か所）を、読める形に補正して表示しています。補正前のデータは、このブラウザ内に退避しました。`;
+    ok = "閉じる";
+  } else {
+    msg = `保存データの一部（${r.issues}か所）を補正して表示しています。補正前のデータを守るため、この状態の変更はまだ保存されません。`;
+    ok = "補正した内容で保存する";
+  }
+  $("#recover-msg").textContent = msg;
+  $("#recover-ok").textContent = ok;
+  box.hidden = false;
+}
+$("#recover-export").addEventListener("click", () => { if (recovery) downloadText(recovery.raw, `family-tasks-original-${todayStr().replace(/-/g, "")}.json`); });
+$("#recover-ok").addEventListener("click", async () => {
+  if (!recovery) return;
+  if (persistBlocked) {
+    const what = recovery.reason === "broken" ? "壊れた元データの代わりに、いま表示しているサンプルを保存します" : "補正前のデータの代わりに、補正した内容を保存します";
+    if (!await confirmDialog(`${what}。元データが必要なら、先に「元データを書き出す」で保存してください。続けますか？`, "保存する")) return;
+    persistBlocked = false;
+    if (!save()) { persistBlocked = true; await confirmDialog("保存できませんでした（ブラウザの保存容量など）。元データはそのまま残っています。", "わかった", true); return; }
+  }
+  recovery = null; renderRecovery();
+  $(".tab-panel.active h1").focus();
 });
 $("#reset-sample").addEventListener("click", async () => {
   if (!await confirmDialog("いまのタスクとメンバーを消して、サンプルデータに戻します。よろしいですか？", "サンプルに戻す")) return;
@@ -860,36 +1001,77 @@ function confirmDialog(msg, okLabel = "OK", infoOnly = false){
 }
 
 /* ================= トースト（Undo 約5秒） ================= */
-let toastTimer = null, undoSnap = null;
-function showToast(msg, snap = null){
+let toastTimer = null, undoInfo = null;
+function showToast(msg, undo = null){
   clearTimeout(toastTimer);
-  undoSnap = snap;
+  undoInfo = undo;   /* 取消できるのは最新の完了だけ */
   $("#toast-msg").textContent = msg;
-  $("#toast-undo").hidden = !snap;
+  $("#toast-undo").hidden = !undo;
   $("#toast").hidden = false;
-  toastTimer = setTimeout(hideToast, snap ? 5000 : 3000);
+  toastTimer = setTimeout(hideToast, undo ? 5000 : 3000);
 }
-function hideToast(){ $("#toast").hidden = true; undoSnap = null; }
+function hideToast(){ $("#toast").hidden = true; undoInfo = null; }
 $("#toast-undo").addEventListener("click", () => {
-  if (!undoSnap) return;
-  const s = undoSnap; clearTimeout(toastTimer); hideToast();
-  undoComplete(s); renderAll();
-  const b = $(`.tab-panel.active [data-act="complete"][data-id="${s.id}"]`); if (b) b.focus();
+  if (!undoInfo) return;
+  const u = undoInfo; clearTimeout(toastTimer); hideToast();
+  clearCompleting(u.id);                    /* 古いアニメーション用タイマーを止める */
+  const ok = undoComplete(u);
+  renderAll();
+  const b = $$(`.tab-panel.active [data-act="complete"][data-id="${CSS.escape(u.id)}"]`).find(canFocus);
+  (b || $(".tab-panel.active h1")).focus();
+  if (!ok) showToast("取り消せませんでした（タスクが変更・削除されています）");
 });
 
+/* ================= 再描画のあとのフォーカス復元 ================= */
+const canFocus = el => !!el && el.isConnected && el.offsetParent !== null && !el.closest("[inert],[hidden]") && !!el.closest(".tab-panel.active");
+/* 再描画で消える要素（タスク行のボタン）にフォーカスがあれば、その位置を覚える */
+function captureFocus(){
+  const a = document.activeElement;
+  if (!a || a === document.body || !$("#main").contains(a)) return null;
+  const btn = a.closest("[data-act][data-id]"); if (!btn) return null;
+  const scope = btn.parentElement.closest("[id]");
+  const all = $$(`[data-act="${btn.dataset.act}"]`, scope);
+  return {act:btn.dataset.act, id:btn.dataset.id, scope:scope.id, index:all.indexOf(btn)};
+}
+function restoreFocus(f){
+  if (!f || stack.length) return;                                   /* モーダル表示中は触らない */
+  const a = document.activeElement;
+  if (a && a !== document.body && a.isConnected) return;             /* 別の場所にいるなら奪わない */
+  const sc = document.getElementById(f.scope);
+  const sel = `[data-act="${f.act}"][data-id="${CSS.escape(f.id)}"]`;
+  let t = null;
+  if (f.act !== "complete") {                                       /* 編集：同じタスクのボタンへ */
+    t = sc && $(sel, sc);
+    if (!canFocus(t)) t = $$(`.tab-panel.active ${sel}`).find(canFocus) || null;
+  }
+  if (!canFocus(t) && sc) {                                         /* 完了・削除：同じ一覧の同じ位置（＝次のタスク） */
+    const all = $$(`[data-act="${f.act}"]`, sc).filter(canFocus);
+    t = all[Math.min(f.index, all.length - 1)] || null;
+  }
+  if (!canFocus(t)) t = $(".tab-panel.active h1");                   /* なければ表示中パネルの見出し */
+  if (t) t.focus();
+}
+
 /* ================= 完了・編集（イベント委譲） ================= */
+/* 完了処理中のタスクID → タイマー。同じタスクが2つの一覧に出ていても1回だけ完了する */
+const completing = new Map();
+function clearCompleting(id){ const c = completing.get(id); if (c) { c.timers.forEach(clearTimeout); completing.delete(id); } }
 document.getElementById("main").addEventListener("click", e => {
   const b = e.target.closest("[data-act]"); if (!b) return;
   const id = b.dataset.id;
   if (b.dataset.act === "complete") {
-    const row = b.closest(".task"); if (!row || row.classList.contains("completing")) return;
+    if (completing.has(id)) return;
     const title = (state.tasks.find(x => x.id === id) || {}).title || "";
-    const snap = completeTask(id); if (!snap) return;
-    showToast(`「${title}」を完了しました`, snap);
+    const u = completeTask(id, b.dataset.due || undefined);
+    if (!u) { renderAll(); return; }                                /* 表示が古い（既に完了・期限が進んだ）→ 描き直すだけ */
+    showToast(`「${title}」を完了しました`, u);
     if (reduceMotion()) { renderAll(); return; }
-    row.classList.add("completing");
-    setTimeout(() => row.classList.add("leaving"), 380);
-    setTimeout(renderAll, 620);
+    const rows = $$(`#main [data-row="${CSS.escape(id)}"]`);
+    const entry = {timers:[]};
+    completing.set(id, entry);
+    rows.forEach(r => r.classList.add("completing"));
+    entry.timers.push(setTimeout(() => rows.forEach(r => r.classList.add("leaving")), 380));
+    entry.timers.push(setTimeout(() => { if (completing.get(id) !== entry) return; completing.delete(id); renderAll(); }, 620));
   } else if (b.dataset.act === "edit") openSheet(id);
 });
 
@@ -963,20 +1145,10 @@ $("#add-delete").addEventListener("click", async () => {
   state.tasks = state.tasks.filter(x => x.id !== t.id);
   save(); closeModal(); renderAll(); showToast("タスクを削除しました");
 });
-/* 音声入力：Web Speech API があるブラウザだけ */
-const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-if (SR) {
-  const vb = $("#voice-btn"); vb.hidden = false; let rec = null;
-  vb.addEventListener("click", () => {
-    if (rec) { rec.stop(); return; }
-    try {
-      rec = new SR(); rec.lang = "ja-JP"; rec.interimResults = false; rec.maxAlternatives = 1;
-      rec.onresult = ev => { const s = ev.results[0][0].transcript; const i = $("#add-title"); i.value = (i.value ? i.value + " " : "") + s; };
-      rec.onend = rec.onerror = () => { rec = null; vb.setAttribute("aria-pressed", "false"); vb.textContent = "🎤"; };
-      rec.start(); vb.setAttribute("aria-pressed", "true"); vb.textContent = "■";
-    } catch (err) { rec = null; }
-  });
-}
+/* 音声入力は無効（表示しない）。
+   「外部送信ゼロ」を守るには端末内認識（processLocally）を確認してからでないと使えないが、
+   その確認に使う SpeechRecognition.available() の呼び出しでページが落ちるブラウザを確認したため（Chromium 153 ヘッドレス）。
+   安全に確認できると検証できるまで、音声入力のコードは置かない。手入力だけで全機能を使える。 */
 
 /* ================= 育児テンプレート ================= */
 /* 期限 = 基準日（誕生日／出産予定日）＋目安日数。過ぎていれば今日。消耗品は今日から毎週 */
@@ -1186,11 +1358,11 @@ window.addEventListener("popstate", () => showTab(tabFromHash(), false));
 window.addEventListener("hashchange", () => showTab(tabFromHash(), false));
 
 /* ================= 起動 ================= */
-function renderAll(){ renderToday(); renderSchedule(); renderFamily(); }
+function renderAll(){ const f = captureFocus(); renderToday(); renderSchedule(); renderFamily(); restoreFocus(f); }
 /* 日付が変わったら表示を更新（開きっぱなし対策） */
 let lastDay = todayStr();
 setInterval(() => { if (todayStr() !== lastDay) { lastDay = todayStr(); weekStart = selDate = lastDay; renderAll(); } else renderNotice(openTasks()); }, 60000);
-renderAll(); renderSettings();
+renderAll(); renderSettings(); renderRecovery();
 showTab(tabFromHash(), false);
 requestAnimationFrame(movePill);
 if (!state.onboarded) { openModal($("#onb"), null, {scrim:false}); onbStep(1); }

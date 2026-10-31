@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#0068B7">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>AIでまず何を作るか診断｜ウゴキラボ</title>
+<meta name="description" content="全8問・約1分。AIで最初に作るとよいツールと、Day 1〜7の作業計画、AIにそのまま渡せる制作指示が分かります。回答はブラウザの中だけで判定し、どこにも送信しません。">
+<meta property="og:title" content="AIでまず何を作るか診断｜ウゴキラボ">
+<meta property="og:description" content="全8問・約1分。AIで最初に作るツールと、7日間の作業計画が分かります。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://t0t005081114-hue.github.io/shindan/">
+<link rel="icon" href="data:,">
+<style>
+  /* ハブ（/index.html）と同じデザイントークン */
+  :root{
+    --bg:#F6F7F9; --card:#FFFFFF; --ink:#111827; --sub:#5F6B7A;
+    --blue:#0090E0; --blue-d:#0068B7; --navy:#0B3556; --pale:#EAF5FF; --line:#E6E9EE;
+    --green:#00803A; --green-d:#006F32; /* LINEの緑(#06C755)は白文字とのコントラストが2.3:1のため、4.5:1以上になる濃さに調整 */
+    --out:cubic-bezier(.22,1,.36,1); --spring:cubic-bezier(.34,1.45,.64,1);
+    --tA:#A85200; --tB:#0A7676; --tC:#0068B7; --tD:#C2417A; --tE:#6D4FD1;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  [hidden]{display:none!important;}
+  html{-webkit-text-size-adjust:100%;}
+  body{background:var(--bg);color:var(--ink);
+    font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",sans-serif;
+    line-height:1.8;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+  button,input{font:inherit;color:inherit;}
+  button{cursor:pointer;}
+  a{color:var(--blue-d);}
+  :focus-visible{outline:3px solid var(--blue);outline-offset:3px;border-radius:8px;}
+  .sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+  .wrap{max-width:600px;margin:0 auto;padding:0 18px calc(48px + env(safe-area-inset-bottom));}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:999px;
+    font-weight:800;text-decoration:none;padding:15px 30px;font-size:16.5px;line-height:1.3;min-height:52px;
+    transition:transform .15s var(--out),box-shadow .2s,background .2s,opacity .2s;}
+  .btn:active{transform:scale(.97);}
+  .btn-white{background:#fff;color:var(--navy);box-shadow:0 6px 18px rgba(11,53,86,.25);}
+  .btn-navy{background:var(--navy);color:#fff;}
+  .btn-line{background:var(--green);color:#fff;}
+  .btn-line:hover{background:var(--green-d);}
+  .btn-outline{background:#fff;color:var(--navy);border:1.5px solid var(--line);}
+  .btn-block{display:flex;width:100%;}
+  .btn[disabled]{opacity:.38;cursor:not-allowed;transform:none;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 20px;
+    box-shadow:0 2px 10px rgba(11,53,86,.05);}
+  .note{font-size:13px;color:var(--sub);}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 0;}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:900;font-size:16px;letter-spacing:.04em;color:inherit;text-decoration:none;}
+  .brand .mark{width:32px;height:32px;border-radius:10px;background:var(--blue-d);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:900;}
+  .screen:focus{outline:none;}
+  h1:focus,h2:focus{outline:none;}
+
+  /* ---------- 導入 ---------- */
+  .intro-hero{background:linear-gradient(180deg,#0073C2 0%,#0068B7 100%);color:#fff;border-radius:0 0 32px 32px;
+    padding:8px 20px 44px;margin:0 -18px;}
+  .intro-hero .in{max-width:600px;margin:0 auto;}
+  .intro-hero .brand{color:#fff;} .intro-hero .brand .mark{background:#fff;color:var(--blue-d);}
+  .pill{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.45);
+    border-radius:999px;padding:4px 14px;font-size:13.5px;font-weight:700;margin:28px 0 14px;}
+  .intro-hero h1{font-size:32px;font-weight:900;line-height:1.4;}
+  .intro-hero .sub{margin-top:12px;font-size:15.5px;color:#fff;}
+  .intro-hero .btn{margin-top:26px;width:100%;max-width:340px;}
+  .intro-hero .note{color:#fff;margin-top:12px;}
+  .learn{margin-top:-22px;display:grid;gap:10px;}
+  .learn .card{display:flex;gap:14px;align-items:flex-start;padding:16px 18px;}
+  .learn .ic{flex:none;width:40px;height:40px;border-radius:12px;background:var(--pale);color:var(--blue-d);
+    display:flex;align-items:center;justify-content:center;}
+  .learn .ic svg{width:22px;height:22px;}
+  .learn b{display:block;font-size:15.5px;}
+  .learn span{display:block;color:var(--sub);font-size:13.5px;line-height:1.6;}
+  .types-peek{margin-top:22px;}
+  .types-peek h2{font-size:17px;font-weight:900;margin-bottom:10px;}
+  .peek{display:flex;flex-wrap:wrap;gap:8px;list-style:none;}
+  .peek li{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);border-radius:999px;
+    padding:5px 12px 5px 6px;font-size:13.5px;font-weight:700;}
+  .tl{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;
+    color:#fff;font-size:12.5px;font-weight:900;flex:none;}
+  .tl-A{background:var(--tA);}.tl-B{background:var(--tB);}.tl-C{background:var(--tC);}.tl-D{background:var(--tD);}.tl-E{background:var(--tE);}
+
+  /* ---------- 質問 ---------- */
+  .qhead{display:flex;align-items:center;gap:10px;padding:10px 0 8px;}
+  .back{display:inline-flex;align-items:center;gap:4px;background:none;border:0;color:var(--navy);font-weight:800;
+    font-size:15px;padding:10px 12px 10px 4px;min-height:44px;border-radius:10px;}
+  .back svg{width:20px;height:20px;}
+  .back[disabled]{visibility:hidden;}
+  .count{margin-left:auto;font-weight:900;font-size:15px;color:var(--navy);font-variant-numeric:tabular-nums;}
+  .count small{color:var(--sub);font-weight:700;font-size:13px;}
+  .bar{height:8px;border-radius:99px;background:#DCE4EC;overflow:hidden;}
+  .bar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--blue),var(--blue-d));
+    transition:width .45s var(--out);}
+  .dots{display:flex;justify-content:space-between;margin:8px 2px 0;}
+  .dots span{width:8px;height:8px;border-radius:50%;background:#DCE4EC;transition:background .3s,transform .3s var(--spring);}
+  .dots span.on{background:var(--blue);} .dots span.now{transform:scale(1.5);background:var(--blue-d);}
+  fieldset{border:0;min-width:0;}
+  .qcard{margin-top:22px;}
+  .qnum{display:block;font-size:13.5px;font-weight:900;color:var(--blue-d);letter-spacing:.06em;margin-bottom:2px;}
+  legend{display:block;font-size:23px;font-weight:900;line-height:1.5;padding:0;margin:4px 0 18px;}
+  .opts{display:grid;gap:10px;}
+  .opt{position:relative;display:flex;align-items:center;gap:14px;background:#fff;border:1.5px solid var(--line);
+    border-radius:16px;padding:14px 16px;min-height:60px;font-weight:700;font-size:16px;line-height:1.55;cursor:pointer;
+    transition:border-color .18s,background .18s,transform .15s var(--out),box-shadow .2s;
+    -webkit-tap-highlight-color:transparent;}
+  .opt:hover{border-color:#B9D9F2;}
+  .opt:active{transform:scale(.985);}
+  .opt input{position:absolute;opacity:0;width:1px;height:1px;}
+  .opt .rd{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid #B7C2CE;background:#fff;position:relative;
+    transition:border-color .18s,background .18s;}
+  .opt .rd::after{content:"";position:absolute;left:6px;top:3px;width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;
+    transform:rotate(45deg) scale(0);transition:transform .25s var(--spring);}
+  .opt:has(input:checked){border-color:var(--blue);background:var(--pale);box-shadow:0 4px 14px rgba(0,104,183,.12);}
+  .opt:has(input:checked) .rd{border-color:var(--blue-d);background:var(--blue-d);}
+  .opt:has(input:checked) .rd::after{transform:rotate(45deg) scale(1);}
+  .opt:has(input:focus-visible){outline:3px solid var(--blue);outline-offset:2px;}
+  .qnav{margin-top:20px;}
+  .qnav .hint{text-align:center;margin-top:10px;}
+  .enter{animation:enter .32s var(--out) both;}
+  .enter-back{animation:enterBack .32s var(--out) both;}
+  @keyframes enter{from{opacity:0;transform:translateX(26px);}to{opacity:1;transform:none;}}
+  @keyframes enterBack{from{opacity:0;transform:translateX(-26px);}to{opacity:1;transform:none;}}
+
+  /* ---------- 集計 ---------- */
+  .calc{min-height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:18px;}
+  .calc svg{width:72px;height:72px;}
+  .calc .ring{stroke:var(--blue);stroke-width:5;fill:none;stroke-linecap:round;stroke-dasharray:100;stroke-dashoffset:100;
+    transform:rotate(-90deg);transform-origin:center;animation:draw .8s var(--out) forwards;}
+  @keyframes draw{to{stroke-dashoffset:0;}}
+  .calc p{font-weight:900;color:var(--navy);font-size:17px;}
+
+  /* ---------- 結果 ---------- */
+  .res-hero{position:relative;overflow:hidden;color:#fff;border-radius:0 0 32px 32px;margin:0 -18px;padding:8px 20px 38px;
+    background:linear-gradient(170deg,var(--tc) 0%,var(--navy) 120%);}
+  .res-hero .in{max-width:600px;margin:0 auto;position:relative;z-index:1;}
+  .res-hero .brand{color:#fff;} .res-hero .brand .mark{background:#fff;color:var(--navy);}
+  .res-hero .you{margin-top:18px;font-weight:800;font-size:15px;}
+  .badge-row{display:flex;align-items:center;gap:16px;margin-top:8px;}
+  .badge{flex:none;width:76px;height:76px;border-radius:24px;background:#fff;color:var(--tc);display:flex;align-items:center;
+    justify-content:center;font-size:42px;font-weight:900;box-shadow:0 10px 28px rgba(0,0,0,.22);
+    animation:pop .6s var(--spring) .15s both;}
+  @keyframes pop{from{transform:scale(.3) rotate(-12deg);opacity:0;}to{transform:none;opacity:1;}}
+  .res-hero h1{font-size:30px;font-weight:900;line-height:1.35;}
+  .res-hero .catch{margin-top:14px;font-size:18px;font-weight:900;line-height:1.6;}
+  .res-hero .summary{margin-top:8px;font-size:15px;}
+  .burst{position:absolute;inset:0;pointer-events:none;}
+  .burst i{position:absolute;left:var(--x);top:var(--y);width:var(--s);height:var(--s);border-radius:50%;
+    background:rgba(255,255,255,.55);opacity:0;animation:spark 1.4s var(--out) var(--d) forwards;}
+  .burst i:nth-child(3n){border-radius:3px;background:rgba(255,255,255,.35);}
+  @keyframes spark{0%{opacity:0;transform:translateY(20px) scale(.2);}35%{opacity:1;}100%{opacity:.0;transform:translateY(-40px) scale(1);}}
+  .r-sec{margin-top:26px;}
+  .r-sec > h2{font-size:20px;font-weight:900;line-height:1.5;margin-bottom:12px;display:flex;align-items:center;gap:10px;}
+  .r-sec > h2 .n{flex:none;width:30px;height:30px;border-radius:50%;background:var(--navy);color:#fff;font-size:14px;
+    display:inline-flex;align-items:center;justify-content:center;}
+  .fade{opacity:0;transform:translateY(14px);transition:opacity .5s var(--out),transform .5s var(--out);}
+  .fade.in{opacity:1;transform:none;}
+  .reasons{list-style:none;display:grid;gap:8px;}
+  .reasons li{position:relative;padding-left:28px;font-weight:700;}
+  .reasons li::before{content:"";position:absolute;left:4px;top:.55em;width:14px;height:8px;border:solid var(--tc);border-width:0 0 3px 3px;transform:rotate(-45deg);}
+  .why-more{margin-top:12px;font-size:14px;color:var(--sub);}
+  .pace{margin-top:14px;background:#FFF7E6;border:1px solid #F5DDA8;color:#6B4A00;border-radius:14px;padding:12px 14px;font-size:14.5px;}
+  .pace b{color:#7A4F00;}
+  .bars{margin-top:16px;display:grid;gap:7px;}
+  .bars .row{display:grid;grid-template-columns:minmax(0,1fr) 34px;grid-template-areas:"nm pt" "tr tr";align-items:center;column-gap:8px;row-gap:3px;font-size:13.5px;font-weight:700;}
+  .bars .row .nm{grid-area:nm;} .bars .tr{grid-area:tr;} .bars .pt{grid-area:pt;}
+  .bars .row .nm{display:flex;align-items:center;gap:6px;white-space:nowrap;}
+  .bars .row .nm .tl{width:20px;height:20px;font-size:11px;}
+  .bars .tr{height:10px;border-radius:99px;background:#EDF1F5;overflow:hidden;}
+  .bars .tr i{display:block;height:100%;width:0;border-radius:99px;background:#B7C2CE;transition:width .8s var(--out);}
+  .bars .row.win .tr i{background:var(--tc);}
+  .bars .pt{text-align:right;color:var(--sub);font-variant-numeric:tabular-nums;}
+  .tool-name{font-size:22px;font-weight:900;color:var(--navy);line-height:1.45;}
+  .tool-desc{margin-top:6px;color:#2B3644;}
+  .mock{margin:18px auto 6px;max-width:300px;background:#F3F6FA;border:1px solid var(--line);border-radius:26px;padding:14px;
+    box-shadow:0 14px 30px rgba(11,53,86,.12);}
+  .mock .scr{background:#fff;border-radius:16px;padding:14px;border:1px solid var(--line);}
+  .mock .mt{font-weight:900;font-size:15px;color:var(--navy);padding-bottom:8px;border-bottom:2px solid var(--tc);}
+  .mock .mr{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px;}
+  .mock .mr span:first-child{font-weight:800;}
+  .mock .mr span:last-child{color:var(--sub);text-align:right;}
+  .mock .mb{margin-top:12px;text-align:center;background:var(--tc);color:#fff;border-radius:999px;padding:8px;font-weight:900;font-size:13.5px;}
+  .mock-cap{font-size:13.5px;color:var(--sub);margin-top:10px;}
+  .h3{font-size:16px;font-weight:900;margin:18px 0 8px;}
+  .feat{list-style:none;display:grid;gap:6px;}
+  .feat li{display:flex;gap:10px;align-items:flex-start;}
+  .feat li::before{content:"";flex:none;width:20px;height:20px;margin-top:.25em;border-radius:6px;background:var(--pale);
+    box-shadow:inset 0 0 0 2px var(--blue);}
+  .days{list-style:none;display:grid;gap:10px;position:relative;}
+  .day{display:grid;grid-template-columns:52px 1fr;gap:12px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px 14px 12px;}
+  .day .dn{display:flex;flex-direction:column;align-items:center;justify-content:center;width:52px;height:52px;border-radius:14px;
+    background:var(--pale);color:var(--blue-d);font-weight:900;line-height:1.1;}
+  .day .dn small{font-size:10.5px;letter-spacing:.06em;}
+  .day .dn b{font-size:21px;}
+  .day h3{font-size:16.5px;font-weight:900;line-height:1.5;}
+  .day p{font-size:14.5px;color:#2B3644;margin-top:2px;}
+  .day .ok{margin-top:8px;font-size:13.5px;font-weight:700;color:#0B7A43;background:#E7F8EE;border-radius:10px;padding:6px 10px;}
+  .day .ok::before{content:"完了の目安：";font-weight:900;}
+  .prompt-box{position:relative;background:#0F1E2E;color:#E7EEF6;border-radius:14px;padding:16px;font-size:13.5px;line-height:1.75;
+    white-space:pre-wrap;word-break:break-word;max-height:300px;overflow:auto;font-family:inherit;}
+  .copy-row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;}
+  .copy-row .btn{flex:1 1 auto;}
+  details{margin-top:12px;background:#fff;border:1px solid var(--line);border-radius:14px;}
+  summary{cursor:pointer;padding:14px 16px;font-weight:800;min-height:48px;list-style-position:inside;}
+  details[open] summary{border-bottom:1px solid var(--line);}
+  details .in{padding:14px 16px;}
+  .howto{counter-reset:h;list-style:none;display:grid;gap:8px;font-size:14.5px;}
+  .howto li{counter-increment:h;display:grid;grid-template-columns:26px 1fr;gap:8px;}
+  .howto li::before{content:counter(h);width:24px;height:24px;border-radius:50%;background:var(--navy);color:#fff;font-weight:900;
+    font-size:13px;display:flex;align-items:center;justify-content:center;margin-top:.2em;}
+  .pits{display:grid;gap:10px;}
+  .pit{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px;}
+  .pit b{display:block;font-size:15.5px;}
+  .pit b::before{content:"つまずき　";color:#B25E00;font-size:12.5px;font-weight:900;}
+  .pit p{font-size:14.5px;color:#2B3644;margin-top:4px;}
+  .pit p::before{content:"対処　";color:#0B7A43;font-size:12.5px;font-weight:900;}
+  .next-card{display:flex;gap:14px;align-items:center;}
+  .next-card p{font-size:14.5px;}
+  .line-cta{margin-top:30px;background:linear-gradient(180deg,#F0FBF4,#E3F7EA);border:1px solid #BFE9CF;border-radius:22px;
+    padding:26px 20px;text-align:center;}
+  .line-cta h2{font-size:21px;font-weight:900;line-height:1.5;}
+  .line-cta p{color:#2B3644;font-size:14.5px;margin:8px 0 18px;}
+  .line-cta .btn{width:100%;max-width:340px;padding:15px 16px;font-size:16px;white-space:nowrap;}
+  .line-cta .note{margin-top:10px;}
+  .share{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  .share .btn{padding:12px 6px;font-size:14.5px;min-height:50px;white-space:nowrap;gap:6px;}
+  .share .glyph{font-weight:900;font-size:17px;line-height:1;}
+  .share .wide{grid-column:1/-1;}
+  .copied{min-height:1.6em;text-align:center;font-size:14px;font-weight:800;color:#0B7A43;margin-top:8px;}
+  .manual{margin-top:10px;}
+  .manual textarea{width:100%;min-height:96px;border:1.5px solid var(--line);border-radius:12px;padding:10px;font:inherit;font-size:14px;}
+  .end{margin-top:30px;display:grid;gap:10px;}
+  footer{text-align:center;color:var(--sub);font-size:12.5px;margin-top:36px;line-height:1.8;}
+  footer a{color:var(--sub);}
+  .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,20px);opacity:0;
+    background:var(--navy);color:#fff;font-weight:800;font-size:14.5px;padding:12px 20px;border-radius:999px;
+    transition:opacity .25s,transform .3s var(--out);pointer-events:none;z-index:10;max-width:calc(100% - 32px);text-align:center;}
+  .toast.show{opacity:1;transform:translate(-50%,0);}
+
+  @media (min-width:720px){
+    .intro-hero,.res-hero{border-radius:0 0 36px 36px;}
+    .intro-hero h1{font-size:38px;}
+    .res-hero h1{font-size:34px;}
+  }
+  @media (max-width:360px){
+    legend{font-size:20px;} .intro-hero h1{font-size:27px;} .res-hero h1{font-size:26px;}
+    .line-cta .btn{font-size:14.5px;} .share .btn{font-size:13.5px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:.001ms!important;animation-delay:0s!important;transition-duration:.001ms!important;transition-delay:0s!important;}
+    .burst{display:none;}
+    .fade{opacity:1;transform:none;}
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <!-- ========== 導入 ========== -->
+  <section id="s-intro" class="screen" aria-labelledby="intro-h">
+    <div class="intro-hero">
+      <div class="in">
+        <div class="topbar"><a class="brand" href="../"><span class="mark" aria-hidden="true">ウ</span>ウゴキラボ</a></div>
+        <span class="pill">全8問・約1分</span>
+        <h1 id="intro-h" tabindex="-1">AIで、まず<br>何を作る？診断</h1>
+        <p class="sub">8つの質問に答えるだけで、あなたが最初に作るとよいツールと、今日から7日間でやることが分かります。</p>
+        <button class="btn btn-white" id="start" type="button">診断をはじめる</button>
+        <p class="note">回答はこの端末の中だけで判定します。どこにも送信しません。</p>
+      </div>
+    </div>
+    <div class="learn" role="list" aria-label="診断で分かること">
+      <div class="card" role="listitem"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg></span><div><b>最初に作る1つのツール</b><span>あなたの目的と、使える時間に合わせて選びます</span></div></div>
+      <div class="card" role="listitem"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4M8 14l2 2 4-4"/></svg></span><div><b>Day 1〜Day 7の作業計画</b><span>毎日の「ここまでできたらOK」付き</span></div></div>
+      <div class="card" role="listitem"><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="13" height="13" rx="2.5"/><path d="M16 8V5.5A2.5 2.5 0 0 0 13.5 3h-8A2.5 2.5 0 0 0 3 5.5v8A2.5 2.5 0 0 0 5.5 16H8"/></svg></span><div><b>AIにそのまま渡せる制作指示</b><span>コピーして貼るだけ。プログラミングの知識は不要です</span></div></div>
+    </div>
+    <div class="types-peek">
+      <h2>診断される5つのタイプ</h2>
+      <ul class="peek" id="peek"></ul>
+    </div>
+    <footer><a href="../">ウゴキラボのトップへ</a></footer>
+  </section>
+
+  <!-- ========== 質問 ========== -->
+  <section id="s-quiz" class="screen" hidden aria-label="診断の質問">
+    <h1 class="sr">AIでまず何を作るか診断</h1>
+    <div class="qhead">
+      <button class="back" id="back" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>戻る</button>
+      <div class="count" id="count" aria-hidden="true"></div>
+    </div>
+    <div class="bar" id="bar" role="progressbar" aria-label="回答の進み具合" aria-valuemin="0" aria-valuemax="8" aria-valuenow="0"><i></i></div>
+    <div class="dots" aria-hidden="true" id="dots"></div>
+    <form id="qform" class="qcard" novalidate>
+      <fieldset id="qfs">
+        <legend tabindex="-1" id="qtext"><span class="qnum" id="qnum"></span><span id="qlabel"></span></legend>
+        <div class="opts" id="opts"></div>
+      </fieldset>
+      <div class="qnav">
+        <button class="btn btn-navy btn-block" id="next" type="submit" disabled>次へ</button>
+        <p class="hint note" id="hint">選ぶと次へ進みます</p>
+      </div>
+    </form>
+    <p class="sr" aria-live="polite" id="live"></p>
+  </section>
+
+  <!-- ========== 集計 ========== -->
+  <section id="s-calc" class="screen calc" hidden aria-live="polite">
+    <h1 class="sr">AIでまず何を作るか診断</h1>
+    <svg viewBox="0 0 64 64" aria-hidden="true"><circle class="ring" cx="32" cy="32" r="26" pathLength="100"/></svg>
+    <p>あなたに合う最初の1作を選んでいます…</p>
+  </section>
+
+  <!-- ========== 結果 ========== -->
+  <section id="s-result" class="screen" hidden aria-labelledby="res-h">
+    <div class="res-hero" id="res-hero">
+      <div class="burst" id="burst" aria-hidden="true"></div>
+      <div class="in">
+        <div class="topbar"><a class="brand" href="../"><span class="mark" aria-hidden="true">ウ</span>ウゴキラボ</a></div>
+        <p class="you">あなたは…</p>
+        <div class="badge-row">
+          <div class="badge" id="res-badge" aria-hidden="true"></div>
+          <h1 id="res-h" tabindex="-1"></h1>
+        </div>
+        <p class="catch" id="res-catch"></p>
+        <p class="summary" id="res-summary"></p>
+      </div>
+    </div>
+
+    <div class="r-sec fade">
+      <h2><span class="n" aria-hidden="true">1</span>この結果になった理由</h2>
+      <div class="card">
+        <ul class="reasons" id="res-reasons"></ul>
+        <p class="why-more" id="res-why"></p>
+        <div class="pace" id="res-pace" hidden></div>
+        <div class="bars" id="res-bars" role="list" aria-label="タイプごとの点数"></div>
+      </div>
+    </div>
+
+    <div class="r-sec fade">
+      <h2><span class="n" aria-hidden="true">2</span>最初に作るもの</h2>
+      <div class="card">
+        <p class="tool-name" id="res-tool"></p>
+        <p class="tool-desc" id="res-tooldesc"></p>
+        <div class="mock" id="res-mock" aria-hidden="true"></div>
+        <p class="mock-cap"><b>完成形のイメージ：</b><span id="res-image"></span></p>
+        <p class="h3">最低限ほしい機能（これだけでOK）</p>
+        <ul class="feat" id="res-feat"></ul>
+      </div>
+    </div>
+
+    <div class="r-sec fade">
+      <h2><span class="n" aria-hidden="true">3</span>7日間の作業計画</h2>
+      <p class="note" style="margin:-4px 0 12px">1日15〜30分が目安です。できなかった日は、次の日に続きをすればOK。</p>
+      <ol class="days" id="res-days"></ol>
+    </div>
+
+    <div class="r-sec fade">
+      <h2><span class="n" aria-hidden="true">4</span>AIへの制作指示（コピーして使えます）</h2>
+      <p class="note" style="margin:-4px 0 12px">ChatGPT・Claude・Geminiなど、ふだん使っているAIのチャットに貼り付けて送ります（Day 3で使います）。</p>
+      <pre class="prompt-box" id="res-prompt" tabindex="0" aria-label="AIへの制作指示の本文"></pre>
+      <div class="copy-row"><button class="btn btn-navy" type="button" id="copy-prompt">制作指示をコピー</button></div>
+      <details>
+        <summary>AIが作ったコードの保存と開き方</summary>
+        <div class="in">
+          <ol class="howto">
+            <li><span>AIの返事のうち「&lt;!DOCTYPE html&gt;」から「&lt;/html&gt;」までをコピーします（コピーボタンがあればそれを使います）。</span></li>
+            <li><span>パソコンのメモ帳に貼り付け、名前の最後を「.html」にして保存します（例：tool.html）。Windowsは文字コード「UTF-8」、Macのテキストエディットは先に「フォーマット」→「標準テキストにする」を選びます。</span></li>
+            <li><span>保存したファイルをダブルクリックすると、ブラウザで開いて動きます。</span></li>
+          </ol>
+          <p class="note" style="margin-top:10px">AIのチャット画面に、作ったものをその場で動かせる表示（プレビュー）がある場合は、そちらで試してもかまいません。</p>
+        </div>
+      </details>
+      <details>
+        <summary>うまく動かないときの伝え方</summary>
+        <div class="in">
+          <pre class="prompt-box" id="res-fix" tabindex="0" aria-label="うまく動かないときにAIへ送る文"></pre>
+          <div class="copy-row"><button class="btn btn-outline" type="button" id="copy-fix">この文をコピー</button></div>
+        </div>
+      </details>
+    </div>
+
+    <div class="r-sec fade">
+      <h2><span class="n" aria-hidden="true">5</span>つまずきやすいところ</h2>
+      <div class="pits" id="res-pits"></div>
+    </div>
+
+    <div class="r-sec fade" id="res-ex-wrap">
+      <h2><span class="n" aria-hidden="true">6</span>ウゴキラボの制作例</h2>
+      <div class="card"><p id="res-ex"></p><p id="res-ex-link" style="margin-top:10px"></p></div>
+    </div>
+
+    <div class="r-sec fade">
+      <h2><span class="n" aria-hidden="true" id="next-n">7</span>慣れてきたら、次の1作</h2>
+      <div class="card next-card"><span class="tl" id="res-next-tl" aria-hidden="true"></span><p id="res-next"></p></div>
+    </div>
+
+    <div class="line-cta fade">
+      <h2>作ったツールに、<br>気持ちいい「動き」を。</h2>
+      <p>ウゴキラボのLINEでは、AIに渡すだけでボタンやチェックに動きを付けられる「設計図」の無料サンプルをお渡ししています。</p>
+      <a class="btn btn-line" id="line-btn" href="#" target="_blank" rel="noopener">LINEで無料サンプルを受け取る</a>
+      <p class="note">LINEの友だち追加画面が開きます。診断の回答や結果はLINEに送られません。</p>
+    </div>
+
+    <div class="r-sec fade">
+      <h2>結果をシェアする</h2>
+      <div class="share">
+        <a class="btn btn-outline" id="share-x" href="#" target="_blank" rel="noopener noreferrer"><span class="glyph" aria-hidden="true">𝕏</span>Xでシェア</a>
+        <a class="btn btn-outline" id="share-th" href="#" target="_blank" rel="noopener noreferrer"><span class="glyph" aria-hidden="true">@</span>Threadsでシェア</a>
+        <button class="btn btn-outline" type="button" id="share-native" hidden>ほかのアプリで共有</button>
+        <button class="btn btn-outline wide" type="button" id="copy-share">結果の文章とURLをコピー</button>
+      </div>
+      <p class="copied" id="copied" aria-live="polite"></p>
+      <div class="manual" id="manual" hidden>
+        <p class="note">自動でコピーできませんでした。下の文を長押し（またはすべて選択）してコピーしてください。</p>
+        <textarea id="manual-text" readonly aria-label="コピー用の文章"></textarea>
+      </div>
+    </div>
+
+    <div class="end">
+      <button class="btn btn-navy btn-block" type="button" id="retry">もう一度診断する</button>
+      <a class="btn btn-outline btn-block" href="../">ウゴキラボのトップへ</a>
+    </div>
+    <footer>回答はこの端末の中だけで判定しています。回答や結果を、ウゴキラボを含むどこにも送信しません。<br>ウゴキラボ ｜ UGOKILAB</footer>
+  </section>
+
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="diagnosis.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

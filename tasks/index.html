@@ -521,25 +521,34 @@ function sameJSON(a, b){
   const ka = Object.keys(a), kb = Object.keys(b);
   return ka.length === kb.length && ka.every(k => Object.prototype.hasOwnProperty.call(b, k) && sameJSON(a[k], b[k]));
 }
-/* 同じIDが1回だけなら引き継ぎ、重複・不正なら新しいIDにする。
-   返り値：{map：元ID → 新ID（参照先を一意に決められないときは null）, ids：各要素の新ID}。元データは書き換えない */
-function reassignIds(list, make, taken){
+/* 新しく発行するIDの作り手。予約集合（元データのID・参照ID・発行済みID）とぶつからないものだけ返し、発行したら予約に加える */
+const issuer = (reserved, make) => () => { let id; do { id = make(); } while (reserved.has(id)); reserved.add(id); return id; };
+/* 元データの配列（除外した要素も含む）で1回だけ出てくる正しいIDは、並び順にかかわらず維持する。
+   それ以外（重複・不正）は fresh() で振り直す。予約集合は「新規発行で使わない」ためだけに使い、維持の判定には使わない。
+   返り値：{map：元ID → 新ID（重複で参照先を決められないときは null）, ids：list の各要素の新ID, count：元データでの出現回数} */
+function reassignIds(list, allList, fresh){
   const count = new Map();
-  list.forEach(x => { if (typeof x.id === "string") count.set(x.id, (count.get(x.id) || 0) + 1); });
-  const map = new Map(), ids = [], fresh = () => { let id; do { id = make(); } while (taken.has(id)); return id; };
-  list.forEach(x => {
-    const old = x.id, unique = typeof old === "string" && count.get(old) === 1;
-    const id = unique && isId(old) && !taken.has(old) ? old : fresh();
-    taken.add(id);
-    if (typeof old === "string") map.set(old, unique ? id : null);
-    ids.push(id);
-  });
-  return {map, ids};
+  allList.forEach(x => { if (isObj(x) && typeof x.id === "string") count.set(x.id, (count.get(x.id) || 0) + 1); });
+  const keep = list.map(x => typeof x.id === "string" && count.get(x.id) === 1 && isId(x.id));
+  const ids = list.map((x, i) => keep[i] ? x.id : fresh());
+  const map = new Map();
+  list.forEach((x, i) => { if (typeof x.id === "string") map.set(x.id, count.get(x.id) === 1 ? ids[i] : null); });
+  return {map, ids, count};
 }
 /* 返り値：{state, changed, count}。changed が false なら元データと完全に同じ内容 */
-function sanitize(raw){
+function sanitize(raw, makeId = uid){   /* makeId：IDの元になる文字列の作り手（テストで差し替えられるように引数化。通常は uid） */
   let notes = 0; const note = () => { notes++; };
   if (!isObj(raw)) throw new Error("root");
+  /* 予約集合：補正前のデータにある ID と参照 ID（削除済みの人・タスクを指す履歴も含む） */
+  const arr = v => Array.isArray(v) ? v : [];
+  const allM = arr(raw.members), allT = arr(raw.tasks), allE = arr(raw.events);
+  const strs = (list, key) => list.filter(isObj).map(x => x[key]).filter(v => typeof v === "string");
+  const mReserved = new Set([...strs(allM, "id"), ...strs(allT, "assigneeId"), ...strs(allE, "by")]);
+  if (isObj(raw.settings) && typeof raw.settings.actorId === "string") mReserved.add(raw.settings.actorId);
+  const tReserved = new Set([...strs(allT, "id"), ...strs(allE, "taskId")]);
+  const eReserved = new Set(strs(allE, "id"));
+  const freshM = issuer(mReserved, () => "m" + makeId()), freshT = issuer(tReserved, () => makeId());
+  const freshTemp = issuer(tReserved, () => "x" + makeId()), freshE = issuer(eReserved, () => makeId());
   const s = {version:1, onboarded:raw.onboarded !== false, members:[], child:{date:null, kind:"birth"}, tasks:[], events:[], settings:defaultSettings()};
   if (raw.version !== 1 || typeof raw.onboarded !== "boolean") note();
   /* メンバー：名前必須・最大4人 */
@@ -547,7 +556,7 @@ function sanitize(raw){
     const ok = isObj(m) && typeof m.name === "string" && m.name.trim() !== ""; if (!ok) note(); return ok;
   });
   if (rawM.length > MAX_MEMBERS) { rawM.length = MAX_MEMBERS; note(); }
-  const {map:mMap, ids:mIds} = reassignIds(rawM, () => "m" + uid(), new Set());
+  const {map:mMap, ids:mIds, count:mCount} = reassignIds(rawM, allM, freshM);
   const styles = new Set();
   rawM.forEach((m, i) => {
     let style = Number.isInteger(m.style) && m.style >= 0 && m.style <= 3 && !styles.has(m.style) ? m.style : null;
@@ -555,8 +564,11 @@ function sanitize(raw){
     styles.add(style);
     s.members.push({id:mIds[i], name:m.name.trim().slice(0, 12), role:typeof m.role === "string" ? m.role.slice(0, 24) : "", style});
   });
-  if (!s.members.length) { s.members = defaultMembers(); note(); }
-  /* 参照：一意に決まる元IDだけ新IDへ。決まらない・存在しないものは null */
+  if (!s.members.length) {   /* 既定の2人で補う。過去の参照とぶつかる m1／m2 は使わない */
+    s.members = defaultMembers(); note();
+    s.members.forEach(m => { if (mReserved.has(m.id)) m.id = freshM(); else mReserved.add(m.id); });
+  }
+  /* 参照：一意に決まる元IDだけ新IDへ。決まらない・除外／削除された人は null（未定） */
   const resolveMember = id => (typeof id === "string" && mMap.has(id)) ? mMap.get(id) : null;
   /* 子ども */
   const c = isObj(raw.child) ? raw.child : (note(), {});
@@ -571,7 +583,7 @@ function sanitize(raw){
   const rawT = (Array.isArray(raw.tasks) ? raw.tasks : (note(), [])).filter(t => {
     const ok = isObj(t) && typeof t.title === "string" && t.title.trim() !== ""; if (!ok) note(); return ok;
   });
-  const {map:tMap, ids:tIds} = reassignIds(rawT, uid, new Set());
+  const {map:tMap, ids:tIds, count:tCount} = reassignIds(rawT, allT, freshT);
   const nowIso = new Date().toISOString();
   rawT.forEach((t, i) => {
     const x = {id:tIds[i], title:t.title.trim().slice(0, 60), assigneeId:null, due:null, repeat:"none", kind:"general", tpl:null, done:t.done === true, doneAt:null,
@@ -589,15 +601,18 @@ function sanitize(raw){
   const rawE = (Array.isArray(raw.events) ? raw.events : (note(), [])).filter(e => {
     const ok = isObj(e) && oneOf(e.type, TYPES) && typeof e.taskId === "string" && isTime(e.at); if (!ok) note(); return ok;
   });
-  const eIds = reassignIds(rawE, uid, new Set()).ids;
-  const taskIds = new Set(s.tasks.map(t => t.id));
+  const eIds = reassignIds(rawE, allE, freshE).ids;
+  /* 対応先を決められない taskId は、どのタスクにも付かない仮IDへ。同じ元IDは同じ仮IDにそろえる */
+  const temps = new Map(), temp = old => { if (!temps.has(old)) temps.set(old, freshTemp()); return temps.get(old); };
   rawE.forEach((e, i) => {
     let taskId;
-    if (tMap.has(e.taskId)) taskId = tMap.get(e.taskId) || ("x" + uid());   /* 重複で決まらない → どのタスクにも付けない */
-    else taskId = isId(e.taskId) && !taskIds.has(e.taskId) ? e.taskId : ("x" + uid());
+    if (tMap.has(e.taskId)) taskId = tMap.get(e.taskId) || temp(e.taskId);         /* 重複で決まらない */
+    else if ((tCount.get(e.taskId) || 0) > 1) taskId = temp(e.taskId);            /* 除外された要素と重複 */
+    else taskId = isId(e.taskId) ? e.taskId : temp(e.taskId);                     /* 削除済みタスク：安全なIDは残す（予約済みなので再利用されない） */
     let by;
-    if (typeof e.by === "string" && mMap.has(e.by)) by = mMap.get(e.by) || "";   /* 重複で決まらない → 名前の控え（byName）で表示 */
-    else by = isId(e.by) ? e.by : "";
+    if (typeof e.by === "string" && mMap.has(e.by)) by = mMap.get(e.by) || "";     /* 重複で決まらない → 名前の控え（byName）で表示 */
+    else if (typeof e.by === "string" && (mCount.get(e.by) || 0) > 1) by = "";
+    else by = isId(e.by) ? e.by : "";                                              /* 除外・削除された人：安全なIDは残す（予約済み） */
     const ev = {id:eIds[i], taskId, type:e.type, by, byName:typeof e.byName === "string" ? e.byName : "", at:e.at, title:typeof e.title === "string" ? e.title : ""};
     if (e.type === "assign" || e.type === "due") { ev.from = typeof e.from === "string" ? e.from : ""; ev.to = typeof e.to === "string" ? e.to : ""; }
     s.events.push(ev);

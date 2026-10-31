@@ -60,7 +60,7 @@ html{background:var(--bg)}
 body{margin:0;min-height:100vh;color:var(--text);
   font-family:"Noto Sans JP",system-ui,-apple-system,"Hiragino Kaku Gothic ProN",sans-serif;
   background:var(--body-bg);
-  padding-bottom:190px}
+  padding-bottom:calc(130px + env(safe-area-inset-bottom))}
 a{color:inherit}
 .wrap{max-width:1220px;margin:0 auto;padding:22px 20px 36px}
 
@@ -166,7 +166,7 @@ svg.ic{fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stro
 .glass{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.38);
   backdrop-filter:blur(12px) saturate(1.5);-webkit-backdrop-filter:blur(12px) saturate(1.5);
   box-shadow:0 10px 26px rgba(3,10,30,.35)}
-.sp-nav{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:60;width:min(344px,92vw);height:66px;border-radius:999px;margin:0}
+.sp-nav{position:fixed;left:50%;transform:translateX(-50%);bottom:max(14px, env(safe-area-inset-bottom));z-index:60;width:min(520px,94vw);height:66px;border-radius:999px;margin:0}
 .sp-ind{position:absolute;top:6px;left:6px;width:80px;height:54px;border-radius:999px;
   background:linear-gradient(135deg,#39C2D7,#2E86CC);box-shadow:0 4px 14px rgba(20,120,200,.5);
   transition:transform .35s cubic-bezier(.35,1.35,.4,1)}
@@ -176,6 +176,7 @@ svg.ic{fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stro
 .sp-items .it.on{color:#fff}
 html[data-theme="light"] .sp-items .it:not(.on){color:var(--muted)}
 .sp-items svg{width:24px;height:24px}
+.sp-gap{flex:0 0 76px}
 
 /* ============ ナビ 05 Dock Hop（カテゴリ・ショートカット） ============ */
 .dk-dock{display:flex;align-items:center;justify-content:space-evenly;gap:8px;border-radius:24px;
@@ -395,7 +396,7 @@ html[data-theme="light"] .lt-tabs .tb.on{color:var(--text)}
 .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
 
 /* ナビ 03 Center Action（中央＋ボタン＋扇） */
-.ca-wrap{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);z-index:50;width:0;height:0}
+.ca-wrap{position:absolute;left:50%;top:35px;transform:translateX(-50%);z-index:3;width:0;height:0}
 .ca-btn{position:absolute;left:0;bottom:0;transform:translateX(-50%);width:60px;height:60px;border-radius:50%;z-index:3;
   background:linear-gradient(135deg,#FF9E6B,#FF6B4A);border:2px solid rgba(255,255,255,.55);
   box-shadow:0 10px 22px rgba(255,110,70,.45);display:flex;align-items:center;justify-content:center;color:#fff;cursor:pointer;
@@ -414,7 +415,6 @@ html[data-theme="light"] .lt-tabs .tb.on{color:var(--text)}
 .ca-fan.open .f2{background:#39C2D7;transform:translate(0,-78px) scale(1)}
 .ca-fan.open .f3{background:#FF6B8A;transform:translate(72px,-52px) scale(1)}
 .ca-fan .f1{background:#2ECC8F}.ca-fan .f2{background:#39C2D7}.ca-fan .f3{background:#FF6B8A}
-.ca-caption{position:fixed;left:50%;bottom:158px;transform:translateX(-50%);font-size:11px;color:var(--muted);z-index:49;white-space:nowrap}
 
 /* トースト */
 .toast{position:fixed;top:18px;left:50%;transform:translate(-50%,-80px);z-index:200;display:flex;align-items:center;gap:10px;
@@ -511,10 +511,20 @@ body.drag-active{overflow:hidden}
 
   <!-- ナビ 01 Slide Pill：セクション切替（画面下に固定） -->
   <nav class="sp-nav glass" aria-label="セクション切替">
+    <!-- ナビ 03 Center Action（バー中央に統合） -->
+    <div class="ca-wrap">
+      <div class="ca-fan" id="ca-fan">
+        <button tabindex="-1" class="f f1" data-add="expense"><svg class="ic" viewBox="0 0 24 24"><path d="M4 8h3l2-2.5h6L17 8h3a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z"/><circle cx="12" cy="13.5" r="3.4"/></svg><small>支出</small></button>
+        <button tabindex="-1" class="f f2" data-add="fixed"><svg class="ic" viewBox="0 0 24 24"><path d="M12 20.5C6 16.5 3.5 13.3 3.5 9.9 3.5 7.2 5.6 5 8.2 5c1.5 0 3 .8 3.8 2 .8-1.2 2.3-2 3.8-2C18.4 5 20.5 7.2 20.5 9.9c0 3.4-2.5 6.6-8.5 10.6z"/></svg><small>固定費</small></button>
+        <button tabindex="-1" class="f f3" data-add="memo"><svg class="ic" viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 016.5 4h11A2.5 2.5 0 0120 6.5v7a2.5 2.5 0 01-2.5 2.5H12l-4.5 4v-4H6.5A2.5 2.5 0 014 13.5v-7z"/></svg><small>メモ</small></button>
+      </div>
+      <button class="ca-btn" id="ca-btn" aria-label="追加メニュー"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+    </div>
     <div class="sp-ind" id="sp-ind"></div>
     <div class="sp-items" role="tablist" aria-label="表示の切り替え">
       <button class="it on" data-nav="0" data-tab="board" role="tab" id="tab-board" aria-controls="panel-board" aria-selected="true"><svg class="ic" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7M6 9.8V20h12V9.8"/></svg>ボード</button>
       <button class="it" data-nav="1" data-tab="list" role="tab" id="tab-list" aria-controls="list-sec" aria-selected="false"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M16.3 16.3L21 21"/></svg>明細</button>
+      <span class="sp-gap" aria-hidden="true"></span>
       <button class="it" data-nav="2" data-tab="analysis" role="tab" id="tab-analysis" aria-controls="analysis-sec" aria-selected="false"><svg class="ic" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0112 0v5l1.5 3h-15z"/><path d="M10 21a2.2 2.2 0 004 0"/></svg>分析</button>
       <button class="it" data-nav="3" data-tab="settings" role="tab" id="tab-settings" aria-controls="settings-sec" aria-selected="false"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1.4-3.4 4.2-5 7.5-5s6.1 1.6 7.5 5"/></svg>設定</button>
     </div>
@@ -656,17 +666,6 @@ body.drag-active{overflow:hidden}
 
   <p style="font-size:11px;color:var(--muted2);margin-top:18px">ウゴキラボ 家計簿ツール — カンバン／アニメーションアイコン／ナビバー 3設計図の実装サンプル</p>
   <p style="font-size:11px;color:var(--muted2);margin-top:6px">公開サンプル版：金額はダミーデータです。入力した内容はあなたのブラウザ内にだけ保存され、サーバーには送信されません。</p>
-</div>
-
-<!-- ナビ 03 Center Action -->
-<div class="ca-caption">＋から支出を追加</div>
-<div class="ca-wrap">
-  <div class="ca-fan" id="ca-fan">
-    <button class="f f1" data-add="expense"><svg class="ic" viewBox="0 0 24 24"><path d="M4 8h3l2-2.5h6L17 8h3a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z"/><circle cx="12" cy="13.5" r="3.4"/></svg><small>支出</small></button>
-    <button class="f f2" data-add="fixed"><svg class="ic" viewBox="0 0 24 24"><path d="M12 20.5C6 16.5 3.5 13.3 3.5 9.9 3.5 7.2 5.6 5 8.2 5c1.5 0 3 .8 3.8 2 .8-1.2 2.3-2 3.8-2C18.4 5 20.5 7.2 20.5 9.9c0 3.4-2.5 6.6-8.5 10.6z"/></svg><small>固定費</small></button>
-    <button class="f f3" data-add="memo"><svg class="ic" viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 016.5 4h11A2.5 2.5 0 0120 6.5v7a2.5 2.5 0 01-2.5 2.5H12l-4.5 4v-4H6.5A2.5 2.5 0 014 13.5v-7z"/></svg><small>メモ</small></button>
-  </div>
-  <button class="ca-btn" id="ca-btn" aria-label="追加メニュー"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
 </div>
 
 <div class="toast" id="toast">
@@ -1042,7 +1041,9 @@ document.querySelectorAll("a[data-tab]").forEach(a => a.addEventListener("click"
 /* ピルの位置：バーの実幅から、選択中タブの真下に来るよう計算（どの画面幅でも合わせる） */
 function movePill(){
   const on = document.querySelector(".sp-items .it.on"), ind = $("#sp-ind"); if (!on) return;
-  ind.style.transform = `translateX(${on.offsetLeft + (on.offsetWidth - ind.offsetWidth) / 2 - ind.offsetLeft}px)`;
+  const w = Math.min(80, on.offsetWidth);   /* 中央スペースで不均等になるため、幅も選択中タブの実測から */
+  ind.style.width = w + "px";
+  ind.style.transform = `translateX(${on.offsetLeft + (on.offsetWidth - w) / 2 - ind.offsetLeft}px)`;
 }
 window.addEventListener("resize", movePill);
 function tabFromHash(){ const h = location.hash.slice(1); return isTab(h) ? h : "board"; }
@@ -1074,9 +1075,11 @@ caBtn.addEventListener("click", () => {
   setTimeout(() => caBtn.classList.remove("press"), 180);
   const open = caFan.classList.toggle("open");
   caBtn.classList.toggle("open", open);
+  caFan.querySelectorAll(".f").forEach(f => f.tabIndex = open ? 0 : -1);
 });
 document.querySelectorAll(".ca-fan .f").forEach(f => f.addEventListener("click", () => {
   caFan.classList.remove("open"); caBtn.classList.remove("open");
+  caFan.querySelectorAll(".f").forEach(x => x.tabIndex = -1);
   const firstBody = board.querySelector(`.column[data-col="todo"] .col-body`);
   showTab("board", true);
   document.getElementById("board-sec").scrollIntoView({behavior:"smooth"});
@@ -1107,6 +1110,7 @@ applyTheme(document.documentElement.getAttribute("data-theme") === "light" ? "li
 $("#theme-btn").addEventListener("click", () => {
   const next = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
   applyTheme(next);
+  movePill();
   try { localStorage.setItem(THEME_KEY, next); } catch(e){}
 });
 

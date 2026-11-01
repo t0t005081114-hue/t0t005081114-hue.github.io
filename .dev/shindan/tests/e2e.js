@@ -195,6 +195,61 @@ async function answerAll(page, pattern) {
     await ctx.close();
   }
 
+  // コピー表示のリセット（再診断・結果切替・遅れて完了するコピー）
+  {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 800 }, reducedMotion: "reduce" });
+    await ctx.grantPermissions(["clipboard-read", "clipboard-write"], { origin: ORIGIN });
+    const page = await ctx.newPage();
+    const errs = []; page.on("pageerror", e => errs.push(e.message)); page.on("console", m => { if (m.type() === "error") errs.push(m.text()); });
+    await page.goto(URL); await page.click("#start");
+    await answerAll(page, REP.E);
+    const label = id => page.textContent(id);
+    // 連続コピー：最後の成功から約2秒で戻る
+    await page.click("#copy-prompt"); await page.waitForTimeout(1000);
+    await page.click("#copy-prompt"); await page.waitForTimeout(1500);
+    ok("CP 連続コピー：2回目から1.5秒後はまだ「コピーしました ✓」", (await label("#copy-prompt")).includes("コピーしました"));
+    await page.waitForTimeout(800);
+    ok("CP 連続コピー：2回目から約2秒後に元の文字・色に戻る", (await label("#copy-prompt")) === "制作指示をコピー" && !(await page.getAttribute("#copy-prompt", "class")).includes("done"));
+    // コピー直後（2秒以内）に再診断して結果まで進む
+    await page.click("#copy-prompt"); await page.click("#copy-share"); await page.waitForTimeout(150);
+    ok("CP 前提：コピー成功表示が出ている", (await label("#copy-share")).includes("コピーしました"));
+    const t0 = Date.now();
+    await page.click("#retry"); await answerAll(page, REP.A);
+    const fresh = async () => page.evaluate(() => ({
+      p: document.getElementById("copy-prompt").textContent, f: document.getElementById("copy-fix").textContent, s: document.getElementById("copy-share").textContent,
+      done: document.querySelectorAll("#s-result .btn.done").length, copied: document.getElementById("copied").textContent,
+      manual: !document.getElementById("manual").hidden, toast: document.getElementById("toast").classList.contains("show"), type: window.__shindan.result.type }));
+    let st = await fresh();
+    ok(`CP コピー後${Date.now() - t0}msで再診断完了：新しい結果に成功表示が残らない`, st.type === "A" && st.p === "制作指示をコピー" && st.f === "この文をコピー" && st.s === "結果の文章とURLをコピー" && st.done === 0 && st.copied === "" && !st.manual && !st.toast, st);
+    ok("CP 前提：再診断は2秒以内に完了", Date.now() - t0 < 2000, Date.now() - t0);
+    // 遅れて完了するコピー（成功）：結果切替後に完了しても新しい画面を変えない
+    await page.evaluate(() => { Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: () => new Promise(r => setTimeout(r, 2500)) } }); });
+    await page.click("#copy-prompt"); await page.click("#copy-share");
+    await page.click("#retry"); await answerAll(page, REP.C);
+    await page.waitForTimeout(3000);
+    st = await fresh();
+    ok("CP 遅れて成功したコピーは、切替後の画面に成功表示を出さない", st.type === "C" && st.done === 0 && st.copied === "" && !st.toast && st.p === "制作指示をコピー" && st.s === "結果の文章とURLをコピー", st);
+    // 遅れて失敗したコピー：切替後の画面に手動コピー欄を出さない
+    await page.evaluate(() => { Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: () => new Promise((_, j) => setTimeout(() => j(new Error("x")), 2500)) } }); document.execCommand = () => false; });
+    await page.click("#copy-share"); await page.click("#copy-prompt");
+    await page.click("#retry"); await answerAll(page, REP.D);
+    await page.waitForTimeout(3000);
+    st = await fresh();
+    ok("CP 遅れて失敗したコピーは、切替後の画面に手動コピー欄やお知らせを出さない", st.type === "D" && !st.manual && !st.toast && st.copied === "", st);
+    // 同じ画面での失敗は、従来どおり手動コピー欄が使える
+    await page.evaluate(() => { Object.defineProperty(navigator, "clipboard", { configurable: true, value: undefined }); });
+    await page.click("#copy-share"); await page.waitForTimeout(200);
+    ok("CP コピー失敗時は手動コピー欄が出て、今の結果の文章が入る", await page.isVisible("#manual-text") && (await page.inputValue("#manual-text")).includes("【D 発信・コンテンツ型】"));
+    await page.click("#copy-prompt"); await page.waitForTimeout(200);
+    ok("CP 制作指示のコピー失敗時は本文が選択され、案内が出る", (await page.evaluate(() => window.getSelection().toString())).startsWith("あなたはWeb制作の先生です") && (await page.textContent("#toast")).includes("自動でコピーできませんでした"));
+    // ペース案内と計画の整合（E型：ゆっくりペース）
+    await page.click("#retry"); await answerAll(page, REP.E);
+    const paceText = await page.textContent("#res-pace");
+    ok("CP E型のゆっくりペース案内に日付がなく、Day 1 で制作指示を使う計画と矛盾しない", !/Day\s*\d/.test(paceText) && paceText.includes("画面が動くところまで") && (await page.textContent("#res-days .day:first-child")).includes("AIへの制作指示"), paceText);
+    ok("CP エラーなし", errs.length === 0, errs);
+    await ctx.close();
+  }
+
   // 1分以内に終わるか（通常設定・自動で次へ）
   {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 800 } });

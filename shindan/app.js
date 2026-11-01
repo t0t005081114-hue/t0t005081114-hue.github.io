@@ -209,7 +209,7 @@
     $("share-x").href = "https://x.com/intent/tweet?text=" + encodeURIComponent(text) + "&url=" + encodeURIComponent(PAGE_URL);
     $("share-th").href = "https://www.threads.net/intent/post?text=" + encodeURIComponent(shareText);
     $("share-native").hidden = typeof navigator.share !== "function";
-    $("copied").textContent = ""; $("manual").hidden = true;
+    resetCopyUI();
 
     show("s-result", $("res-h"));
     // 演出
@@ -267,16 +267,30 @@
     var rg = document.createRange(); rg.selectNodeContents(el);
     var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(rg);
   }
+  // コピー表示の世代番号：再診断・結果表示のたびに進め、古い結果のコピー完了は画面に反映しない
+  var copyGen = 0;
+  var COPY_BTNS = ["copy-prompt", "copy-fix", "copy-share"];
+  COPY_BTNS.forEach(function (id) { $(id).dataset.label = $(id).textContent; });
+  function restoreBtn(btn) {
+    clearTimeout(btn._t); btn._t = null;
+    btn.textContent = btn.dataset.label; btn.classList.remove("done");
+  }
+  function resetCopyUI() {
+    copyGen++;
+    COPY_BTNS.forEach(function (id) { restoreBtn($(id)); });
+    $("copied").textContent = ""; $("manual").hidden = true;
+    clearTimeout(toastTimer); $("toast").classList.remove("show");
+  }
   function flashDone(btn) {
-    if (!btn.dataset.label) btn.dataset.label = btn.textContent;
     btn.textContent = "コピーしました ✓"; btn.classList.add("done");
-    clearTimeout(btn._t);
-    btn._t = setTimeout(function () { btn.textContent = btn.dataset.label; btn.classList.remove("done"); }, 2000);
+    clearTimeout(btn._t); // 連続で成功したら、最後の成功から2秒後に戻す
+    btn._t = setTimeout(function () { restoreBtn(btn); }, 2000);
   }
   function bindCopy(btnId, srcId, okMsg) {
     $(btnId).addEventListener("click", function () {
-      var src = $(srcId), btn = $(btnId);
+      var src = $(srcId), btn = $(btnId), gen = copyGen;
       copyText(src.textContent).then(function (ok) {
+        if (gen !== copyGen) return;
         if (ok) { toast(okMsg); flashDone(btn); }
         else { selectEl(src); toast("自動でコピーできませんでした。選択された本文をコピーしてください"); }
       });
@@ -285,9 +299,11 @@
   bindCopy("copy-prompt", "res-prompt", "制作指示をコピーしました");
   bindCopy("copy-fix", "res-fix", "コピーしました");
   $("copy-share").addEventListener("click", function () {
-    copyText(shareText).then(function (ok) {
+    var gen = copyGen, text = shareText;
+    copyText(text).then(function (ok) {
+      if (gen !== copyGen) return;
       if (ok) { $("copied").textContent = "コピーしました。好きな場所に貼り付けて共有できます"; $("manual").hidden = true; flashDone($("copy-share")); }
-      else { $("copied").textContent = ""; $("manual").hidden = false; var ta = $("manual-text"); ta.value = shareText; ta.focus(); ta.select(); }
+      else { $("copied").textContent = ""; $("manual").hidden = false; var ta = $("manual-text"); ta.value = text; ta.focus(); ta.select(); }
     });
   });
   $("share-native").addEventListener("click", function () {
@@ -298,6 +314,7 @@
   /* ---------- 再診断 ---------- */
   $("retry").addEventListener("click", function () {
     answers = new Array(N).fill(null); step = 0; result = null;
+    resetCopyUI();
     renderQ(0); show("s-quiz", $("qtext"));
   });
 

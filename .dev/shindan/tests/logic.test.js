@@ -135,6 +135,11 @@ t("ペース：準備度4以上はゆっくり、3以下は標準（タイプと
   const r = S.decide([0, 0, 0, 0, 0, 0, 0, 0]); assert.strictEqual(r.type, "A"); assert.strictEqual(S.pace(r.readiness).id, "slow");
 });
 
+t("ペースの案内文に日付（Day ◯）を書かない（E型はDay 1、他はDay 3に制作開始のため）", () => {
+  [0, 3, 4, 8].forEach(r => assert.ok(!/Day\s*\d/.test(S.pace(r).text), S.pace(r).text));
+  assert.ok(S.TYPES.E.days[0].d.includes("AIへの制作指示") && S.TYPES.A.days[2].d.includes("制作指示"));
+});
+
 // ---- 原稿 ----
 t("全タイプ：Day1〜7 が7つ・各日に作業と完了条件・機能・つまずき3つ・制作指示", () => {
   S.TYPE_IDS.forEach(k => {

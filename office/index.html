@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI組織メーカー｜作りたいものを入れると、必要なAI組織が出てくる｜ウゴキラボ</title>
+<meta name="description" content="作りたいものを入力すると、必要なAIの役割分担（組織の編成案）が分かります。AI社員が歩いて働く様子で流れを確認できます。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#4a2f23; --paper:#fff6df; --cream:#f7ead1;
+    --wood1:#eec088; --wood2:#e6ad68;
+    --meeting:#bcd9ea; --boss:#f6c89f; --cafe1:#f6e7c8; --cafe2:#e9d0a2;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#241d2e;font-family:"DotGothic16","Hiragino Maru Gothic ProN",monospace;
+       display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px}
+  .stage{width:1180px;max-width:100%;background:var(--cream);border:4px solid var(--ink);
+         border-radius:10px;overflow:hidden;box-shadow:0 12px 0 rgba(0,0,0,.35)}
+  .wrap{display:flex}
+
+  /* ===== 入力バー ===== */
+  .builder{background:#34305e;border-bottom:4px solid var(--ink);padding:12px 14px;color:#fff}
+  .builder label{font-size:14px;letter-spacing:.05em;display:block;margin-bottom:8px}
+  .builder label b{color:#ffd166}
+  .brow{display:flex;gap:8px}
+  .brow input{flex:1;font:inherit;font-size:16px;color:var(--ink);background:var(--paper);
+    border:3px solid var(--ink);border-radius:6px;padding:8px 12px;min-width:0}
+  .brow button{font:inherit;font-size:15px;background:#f2a03d;color:var(--ink);cursor:pointer;
+    border:3px solid var(--ink);border-radius:6px;padding:8px 16px;box-shadow:0 3px 0 var(--ink)}
+  .brow button:active{transform:translateY(3px);box-shadow:none}
+  .examples{margin-top:8px;font-size:12px;color:#c9c4f2}
+  .examples button{font:inherit;font-size:12px;background:#4a4680;color:#fff;cursor:pointer;
+    border:2px solid #8f8ac7;border-radius:10px;padding:1px 9px;margin-right:5px}
+
+  /* ===== 左サイドバー ===== */
+  .side{width:228px;flex:none;background:var(--paper);border-right:4px solid var(--ink);padding:14px 12px}
+  .live{display:inline-block;background:#e5483c;color:#fff;font-size:11px;padding:2px 8px;border:2px solid var(--ink);border-radius:4px;letter-spacing:.08em}
+  .side h1{font-size:19px;color:var(--ink);margin:8px 0 2px}
+  .clock{font-size:34px;color:var(--ink);letter-spacing:.06em}
+  .clockbar{height:8px;border:2px solid var(--ink);background:#fff;margin:4px 0 14px}
+  .clockbar i{display:block;height:100%;background:#f2a03d;width:0%}
+  .side h2{font-size:13px;color:var(--ink);border-bottom:2px dashed #b99b78;padding-bottom:4px;margin-bottom:8px}
+  .mission{list-style:none;font-size:12.5px;color:#6b4a35}
+  .mission li{padding:4px 0 4px 22px;position:relative;line-height:1.35}
+  .mission li::before{content:"";position:absolute;left:0;top:4px;width:13px;height:13px;
+    border:2px solid var(--ink);background:#fff;border-radius:3px}
+  .mission li.done{color:#9a8266;text-decoration:line-through}
+  .mission li.done::before{background:#58b368}
+  .mission li.done::after{content:"✓";position:absolute;left:3px;top:1px;color:#fff;font-size:12px}
+
+  /* ===== オフィス全体 ===== */
+  .office{flex:1;position:relative;background:var(--wood1);height:490px}
+  .rooms{display:flex;height:148px;border-bottom:4px solid var(--ink)}
+  .room{position:relative;padding:8px}
+  .room .tag{position:absolute;left:50%;transform:translateX(-50%);bottom:6px;background:var(--paper);
+    border:2px solid var(--ink);border-radius:4px;font-size:11px;color:var(--ink);padding:1px 8px;white-space:nowrap;z-index:3}
+  .studio{width:31%;background:repeating-linear-gradient(90deg,#34305e 0 14px,#3d3870 14px 28px);border-right:4px solid var(--ink)}
+  .onair{position:absolute;top:8px;left:50%;transform:translateX(-50%);font-size:11px;color:#ffb3ab;
+    border:2px solid #ffb3ab;border-radius:4px;padding:1px 8px;opacity:.35;z-index:3}
+  .onair.on{opacity:1;background:#e5483c;color:#fff;border-color:var(--ink)}
+  .ring{position:absolute;top:36px;left:50%;transform:translateX(-50%);width:44px;height:44px;border:6px solid #d9d4ff;border-radius:50%}
+  .cam{position:absolute;top:90px;left:50%;transform:translateX(-50%);font-size:18px}
+  .meeting{width:38%;background:var(--meeting);border-right:4px solid var(--ink)}
+  .mtable{position:absolute;top:42px;left:50%;transform:translateX(-50%);width:150px;height:56px;
+    background:#c98d54;border:3px solid var(--ink);border-radius:50%}
+  .mtable::after{content:"";position:absolute;inset:14px 40px;background:var(--paper);border:2px solid var(--ink);border-radius:3px}
+  .boss{flex:1;background:var(--boss)}
+  .bossface{position:absolute;top:24px;left:50%;transform:translateX(-50%);width:52px;height:52px;background:var(--paper);
+    border:3px solid var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px}
+  .bossdesk{position:absolute;top:86px;left:50%;transform:translateX(-50%);width:92px;height:22px;background:#a9713f;border:3px solid var(--ink);border-radius:4px}
+
+  .floor{position:relative;height:342px;
+    background:
+      repeating-linear-gradient(0deg,transparent 0 39px,rgba(122,76,36,.28) 39px 40px),
+      repeating-linear-gradient(90deg,transparent 0 39px,rgba(122,76,36,.16) 39px 40px),
+      linear-gradient(90deg,var(--wood1),var(--wood2))}
+  .cafe{position:absolute;top:0;right:0;width:132px;height:100%;border-left:4px solid var(--ink);z-index:1;
+    background:repeating-conic-gradient(var(--cafe1) 0% 25%,var(--cafe2) 0% 50%) 0 0/40px 40px}
+  .cafe .tag{position:absolute;left:50%;transform:translateX(-50%);bottom:6px;background:var(--paper);
+    border:2px solid var(--ink);border-radius:4px;font-size:11px;color:var(--ink);padding:1px 8px}
+  .ctable{position:absolute;width:34px;height:34px;background:#d9a45f;border:3px solid var(--ink);border-radius:50%}
+
+  .desk{position:absolute;width:168px;z-index:2}
+  .desk .top{height:44px;background:#fdf3d8;border:3px solid var(--ink);border-radius:6px;
+    display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--ink)}
+  .desk .chip{display:block;text-align:center;margin-top:4px}
+  .desk .chip span{display:inline-block;font-size:11px;color:#fff;border:2px solid var(--ink);border-radius:8px;padding:0 8px}
+
+  /* ===== キャラ：ポケモン赤・青式ドット歩行 ===== */
+  .char{position:absolute;width:36px;height:46px;z-index:5;transition:left .2s steps(2),top .2s steps(2)}
+  .char .hair{position:absolute;top:0;left:5px;width:26px;height:13px;border:2px solid var(--ink);border-radius:12px 12px 4px 4px;z-index:2}
+  .char .head{position:absolute;top:4px;left:5px;width:26px;height:24px;background:#ffd9b3;border:2px solid var(--ink);border-radius:9px}
+  .char .head::before,.char .head::after{content:"";position:absolute;top:11px;width:3px;height:5px;background:var(--ink);border-radius:2px}
+  .char .head::before{left:6px}.char .head::after{right:6px}
+  .char .body{position:absolute;top:28px;left:8px;width:20px;height:14px;border:2px solid var(--ink);border-radius:4px 4px 2px 2px}
+  .char .feet{position:absolute;bottom:0;left:8px;width:20px;display:flex;justify-content:space-between}
+  .char .feet i{width:7px;height:5px;background:#4a2f23;border-radius:2px}
+  .char.walk{animation:bob .2s steps(2) infinite}
+  @keyframes bob{0%{margin-top:0}50%{margin-top:-3px}100%{margin-top:0}}
+  .char.up .head::before,.char.up .head::after{display:none}
+  .char.up .hair{height:22px;border-radius:12px}
+  .char.left .head::before{left:3px}.char.left .head::after{display:none}
+  .char.right .head::after{right:3px}.char.right .head::before{display:none}
+  .bubble{position:absolute;bottom:52px;left:50%;transform:translateX(-50%);background:#fff;border:2px solid var(--ink);
+    border-radius:8px;font-size:11px;color:var(--ink);padding:2px 7px;white-space:nowrap;display:none;z-index:6}
+  .char.say .bubble{display:block}
+
+  /* ===== 会話ウィンドウ＋組織の編成 ===== */
+  .dialog{border-top:4px solid var(--ink);background:#fff;padding:12px 16px;min-height:58px;
+    font-size:16px;color:var(--ink);letter-spacing:.04em}
+  .dialog::after{content:"▼";float:right;color:#e5483c;animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .org{background:var(--paper);border-top:4px solid var(--ink);padding:12px 16px}
+  .org h3{font-size:15px;color:var(--ink);margin-bottom:8px}
+  .org h3 span{color:#b3541e}
+  .orgrows{display:grid;grid-template-columns:1fr 1fr;gap:5px 22px}
+  .orgrow{font-size:13px;color:#6b4a35;display:flex;gap:8px;align-items:baseline}
+  .orgrow .dot{flex:none;width:12px;height:12px;border:2px solid var(--ink);border-radius:3px;transform:translateY(2px)}
+  .orgrow b{color:var(--ink)}
+  .orgrow .tool{flex:none;font-size:11px;background:#34305e;color:#fff;border-radius:8px;padding:0 7px}
+  /* ===== 公開用：LINE導線・フッター ===== */
+  .line-cta{margin-top:16px;background:var(--paper);border:4px solid var(--ink);border-radius:10px;padding:16px;text-align:center;
+    box-shadow:0 8px 0 rgba(0,0,0,.35)}
+  .line-h{font-size:16px;color:var(--ink);letter-spacing:.04em}
+  .line-btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;margin-top:10px;padding:10px 28px;
+    background:#00803A;color:#fff;font-size:16px;text-decoration:none;border:3px solid var(--ink);border-radius:8px;box-shadow:0 3px 0 var(--ink)}
+  .line-btn:active{transform:translateY(3px);box-shadow:none}
+  .line-btn:focus-visible,.foot a:focus-visible{outline:3px solid #ffd166;outline-offset:3px}
+  .line-note{margin-top:8px;font-size:12px;color:#6b4a35}
+  .foot{margin-top:14px;text-align:center;font-size:12px;color:#e6dcc8;line-height:1.9}
+  .foot a{color:#ffd166;display:inline-block;padding:8px 4px}
+
+  /* ===== スマホ：舞台（サイドバー＋オフィス）だけを縮小 ===== */
+  .scaler{position:relative}
+  .scaler.scaled{overflow:hidden}
+  .scaler.scaled .wrap{width:1172px;transform-origin:0 0}
+  @media (max-width:1179px){ .page{width:100%;max-width:1180px} }
+  @media (max-width:719px){
+    body{padding:8px}
+    .orgrows{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="stage">
+    <div class="builder">
+      <label>なにを 作りたい？ 入れると <b>必要なAI組織</b> が出てきて、そのまま動き出します</label>
+      <div class="brow">
+        <input id="goal" type="text" maxlength="40" placeholder="例：家計簿アプリを作りたい">
+        <button id="buildBtn" type="button">AI組織をつくる ▶</button>
+      </div>
+      <div class="examples">ためしに入れてみる：
+        <button type="button" data-ex="家計簿アプリを作りたい">家計簿アプリ</button>
+        <button type="button" data-ex="Instagramの投稿を自動で作りたい">Instagram投稿</button>
+        <button type="button" data-ex="毎朝のニュースを集めて要約したい">ニュース収集</button>
+        <button type="button" data-ex="YouTube動画を作りたい">YouTube動画</button>
+        <button type="button" data-ex="営業の見積書づくりを効率化したい">見積書の効率化</button>
+        <button type="button" data-ex="育児のタスクを夫婦で分担したい">育児タスク分担</button>
+        <button type="button" data-ex="売上のデータを集計してレポートにしたい">売上レポート</button>
+      </div>
+    </div>
+
+    <div class="scaler" id="scaler">
+    <div class="wrap" id="wrap">
+      <aside class="side">
+        <span class="live">● AI COMPANY LIVE</span>
+        <h1 id="orgTitle">AI社員たちの 一日</h1>
+        <div class="clock" id="clock">09:00</div>
+        <div class="clockbar"><i id="clockbar"></i></div>
+        <h2>きょうの ミッション <span id="mcount" style="float:right">0/5</span></h2>
+        <ul class="mission" id="missions"></ul>
+      </aside>
+
+      <main class="office" id="office">
+        <div class="rooms">
+          <div class="room studio">
+            <div class="onair" id="onair">ON AIR</div>
+            <div class="ring"></div><div class="cam">🎥</div>
+            <div class="tag">撮影スタジオ</div>
+          </div>
+          <div class="room meeting">
+            <div class="mtable"></div>
+            <div class="tag">会議室</div>
+          </div>
+          <div class="room boss">
+            <div class="bossface">🧑‍💼</div><div class="bossdesk"></div>
+            <div class="tag">社長室</div>
+          </div>
+        </div>
+        <div class="floor" id="floor">
+          <div class="cafe">
+            <div class="ctable" style="top:56px;left:20px"></div>
+            <div class="ctable" style="top:56px;right:20px"></div>
+            <div class="ctable" style="top:196px;left:48px"></div>
+            <div class="tag">カフェ</div>
+          </div>
+        </div>
+      </main>
+    </div>
+    </div>
+
+    <div class="dialog" id="dialog">作りたいものを 入れてみて！</div>
+    <div class="org">
+      <h3>この組織の編成：<span id="orgName">いつものAI会社</span></h3>
+      <div class="orgrows" id="orgrows"></div>
+    </div>
+  </div>
+  <section class="line-cta" aria-labelledby="line-h">
+    <p class="line-h" id="line-h">無料サンプルはLINEに置いてあります。</p>
+    <a class="line-btn" id="lineBtn" href="https://lin.ee/rWOrZ91" target="_blank" rel="noopener">LINEで受け取る</a>
+    <p class="line-note">LINEの友だち追加画面が開きます。</p>
+  </section>
+  <footer class="foot">
+    <p>ウゴキラボの無料ツールです。編成案は作りたいものの種類に合わせたパターンから提案しています。</p>
+    <p><a href="../">ウゴキラボのトップへ</a></p>
+  </footer>
+</div>
+
+<script>
+const office = document.getElementById('office');
+const floorEl = document.getElementById('floor');
+const TILE = 40, CORRIDOR = 272;
+const desks = [
+  {x:36, y:212},{x:252, y:212},{x:468, y:212},
+  {x:36, y:372},{x:252, y:372},{x:468, y:372},
+];
+const SPOTS = { studio:{x:128,y:52}, meeting:{x:452,y:52}, boss:{x:788,y:52}, cafe:{x:856,y:300} };
+const TIMES = [620, 730, 850, 960, 1080];
+let RUN = 0;           // 生成し直したら古い上演を止める
+let agents = [];
+
+const wait = ms => new Promise(r=>setTimeout(r,ms));
+const dialog = t => document.getElementById('dialog').textContent = t;
+const setChip = (i,t)=>{ const e=document.getElementById('chip'+i); if(e) e.textContent=t; };
+
+/* ===== 組織テンプレート =====
+   flow の各ステップ: [社員index, 行き先(spot名|null=その場), セリフ, ミッション完了文] */
+const ORGS = {
+  dev: {
+    label:'開発チーム型',
+    agents:[
+      {name:'サク',  role:'企画・仕様',   tool:'Claude',      duty:'作るものを決めて仕様に落とす', task:'仕様作成中',   color:'#3b5bdb', hair:'#2b2b3a'},
+      {name:'レン',  role:'設計',         tool:'Claude',      duty:'画面と動きの設計図を書く',     task:'設計中',       color:'#58b368', hair:'#5a3d1e'},
+      {name:'ノア',role:'開発',         tool:'Claude Code', duty:'設計図どおりに実装する',       task:'コード作成中', color:'#4fb3a9', hair:'#173f3a'},
+      {name:'カイ',  role:'確認',         tool:'Codex',       duty:'出来上がりを別目線でチェック', task:'レビュー中',   color:'#7c6bd9', hair:'#31456b'},
+      {name:'ヒナ',  role:'記録・公開',   tool:'Claude',      duty:'使い方をまとめて公開する',     task:'記録中',       color:'#f2a03d', hair:'#20303c'},
+    ],
+    missions:['仕様を決める','設計図を書く','実装する','別AIに確認してもらう','公開する'],
+    flow:[
+      [0,null,'仕様OK！','{goal}の 仕様が 決まった！'],
+      [1,'meeting','設計します','レンは 会議室で 設計図を 書いた！'],
+      [2,null,'実装中…','ノアは 設計図どおりに 作りはじめた！'],
+      [3,'boss','確認お願いします','カイの確認OK！ 社長の 承認も 出た！'],
+      [4,null,'公開します！','ヒナは {goal}を 公開した！'],
+    ],
+  },
+  sns: {
+    label:'発信チーム型',
+    agents:[
+      {name:'レン',  role:'調査',     tool:'Claude',      duty:'ネタと参考事例を集める',   task:'調べもの中', color:'#58b368', hair:'#5a3d1e'},
+      {name:'カイ',  role:'文章',     tool:'Claude',      duty:'フックと本文を書く',       task:'記事作成中', color:'#7c6bd9', hair:'#31456b'},
+      {name:'ユイ',  role:'撮影・投稿',tool:'Claude',     duty:'画面を撮って投稿する',     task:'文案作成中', color:'#ef6aa5', hair:'#7a2e4d'},
+      {name:'ノア',role:'確認',     tool:'Codex',       duty:'誤字と見た目をチェック',   task:'レビュー中', color:'#4fb3a9', hair:'#173f3a'},
+      {name:'ヒナ',  role:'記録',     tool:'Claude',      duty:'数字を見て次を決める',     task:'記録中',     color:'#f2a03d', hair:'#20303c'},
+    ],
+    missions:['ネタを集める','文章を書く','確認してもらう','撮影して投稿する','数字を記録する'],
+    flow:[
+      [0,'meeting','報告します！','レンは ネタを 集めて 報告した！'],
+      [1,null,'書けた！','カイは フックの効いた 文章を 書いた！'],
+      [3,null,'チェックOK','ノアの 確認が 通った！'],
+      [2,'studio','投稿します！','ユイは 撮影して そのまま 投稿した！'],
+      [4,null,'記録したよ','ヒナは 数字を 記録した。いいねが 増えた！'],
+    ],
+  },
+  research: {
+    label:'調査チーム型',
+    agents:[
+      {name:'レン',  role:'収集',   tool:'Claude', duty:'決まった情報源を毎日巡回する', task:'収集中',   color:'#58b368', hair:'#5a3d1e'},
+      {name:'カイ',  role:'要約',   tool:'Claude', duty:'集めた情報を短くまとめる',     task:'要約中',   color:'#7c6bd9', hair:'#31456b'},
+      {name:'ノア',role:'確かめ', tool:'Codex',  duty:'出典と数字が合うか確認する',   task:'確認中',   color:'#4fb3a9', hair:'#173f3a'},
+      {name:'ヒナ',  role:'届ける', tool:'Claude', duty:'毎朝同じ形で届ける',           task:'配信準備中',color:'#f2a03d', hair:'#20303c'},
+    ],
+    missions:['情報源を巡回する','要約する','出典を確かめる','形を整える','毎朝届ける'],
+    flow:[
+      [0,null,'集めたよ！','レンは きょうの情報を 集めた！'],
+      [1,null,'まとめた！','カイは 短く 要約した！'],
+      [2,'meeting','確認します','ノアは 会議室で 出典を 確かめた！'],
+      [3,null,'整えたよ','ヒナは 届ける形に 整えた！'],
+      [3,'cafe','届けました☕','{goal}の 仕組みが できた！ 明日から 毎朝届く！'],
+    ],
+  },
+  video: {
+    label:'映像チーム型',
+    agents:[
+      {name:'サク',  role:'企画',   tool:'Claude',      duty:'テーマと構成を決める',   task:'企画中',   color:'#3b5bdb', hair:'#2b2b3a'},
+      {name:'カイ',  role:'台本',   tool:'Claude',      duty:'台本とテロップを書く',   task:'台本作成中',color:'#7c6bd9', hair:'#31456b'},
+      {name:'ユイ',  role:'撮影',   tool:'Claude',      duty:'画面収録と素材づくり',   task:'撮影準備中',color:'#ef6aa5', hair:'#7a2e4d'},
+      {name:'ノア',role:'確認',   tool:'Codex',       duty:'流れと誤字をチェック',   task:'レビュー中', color:'#4fb3a9', hair:'#173f3a'},
+      {name:'ヒナ',  role:'投稿',   tool:'Claude',      duty:'投稿文と予約を担当',     task:'投稿準備中',color:'#f2a03d', hair:'#20303c'},
+    ],
+    missions:['企画を決める','台本を書く','撮影する','確認してもらう','投稿を予約する'],
+    flow:[
+      [0,'meeting','企画OK！','サクは 会議室で 企画を 決めた！'],
+      [1,null,'台本できた！','カイは 台本を 書いた！'],
+      [2,'studio','撮影します！','ユイは スタジオで 撮影した！'],
+      [3,'boss','確認お願いします','ノアの確認OK！ 社長の 承認も 出た！'],
+      [4,null,'予約したよ','ヒナは 投稿を 予約した！'],
+    ],
+  },
+  work: {
+    label:'業務効率化チーム型',
+    agents:[
+      {name:'ヒナ',  role:'受付・振り分け', tool:'Claude', duty:'頼まれた仕事を受けて振り分ける', task:'受付中',   color:'#f2a03d', hair:'#20303c'},
+      {name:'カイ',  role:'作成',           tool:'Claude', duty:'見積書や書類の下書きを作る',     task:'作成中',   color:'#7c6bd9', hair:'#31456b'},
+      {name:'ノア',role:'確認',           tool:'Codex',  duty:'数字と宛先を別目線で確認する',   task:'確認中',   color:'#4fb3a9', hair:'#173f3a'},
+      {name:'サク',  role:'承認まわし',     tool:'Claude', duty:'社長の承認を取りに行く',         task:'段取り中', color:'#3b5bdb', hair:'#2b2b3a'},
+      {name:'レン',  role:'記録',           tool:'Claude', duty:'済んだ仕事を台帳に残す',         task:'記録中',   color:'#58b368', hair:'#5a3d1e'},
+    ],
+    missions:['仕事を受け付ける','下書きを作る','数字を確認する','承認をもらう','送って記録する'],
+    flow:[
+      [0,null,'受け付けたよ','ヒナは 仕事を 受け付けた！'],
+      [1,null,'作成中…','カイは 下書きを 作った！'],
+      [2,null,'チェックOK','ノアは 数字と宛先を 確かめた！'],
+      [3,'boss','承認お願いします','サクは 社長室で 承認を もらった！'],
+      [4,null,'送って記録！','レンは 送って 台帳に 記録した！'],
+    ],
+  },
+  writing: {
+    label:'記事チーム型',
+    agents:[
+      {name:'レン',  role:'調査', tool:'Claude', duty:'ネタと事例を集める',           task:'調べもの中', color:'#58b368', hair:'#5a3d1e'},
+      {name:'サク',  role:'構成', tool:'Claude', duty:'読む順番と見出しを決める',     task:'構成中',     color:'#3b5bdb', hair:'#2b2b3a'},
+      {name:'カイ',  role:'執筆', tool:'Claude', duty:'本文を書く',                   task:'執筆中',     color:'#7c6bd9', hair:'#31456b'},
+      {name:'ノア',role:'校正', tool:'Codex',  duty:'誤字と事実を別目線で確認する', task:'確認中',     color:'#4fb3a9', hair:'#173f3a'},
+      {name:'ユイ',  role:'公開', tool:'Claude', duty:'タイトルと画像を付けて公開する', task:'仕上げ中',   color:'#ef6aa5', hair:'#7a2e4d'},
+    ],
+    missions:['ネタを集める','構成を決める','本文を書く','校正する','公開する'],
+    flow:[
+      [0,'meeting','報告します！','レンは 会議室で ネタを 報告した！'],
+      [1,null,'構成OK！','サクは 見出しの 構成を 決めた！'],
+      [2,null,'書けた！','カイは 本文を 書いた！'],
+      [3,null,'校正OK','ノアは 誤字と事実を 確かめた！'],
+      [4,null,'公開します！','ユイは {goal}を 公開した！'],
+    ],
+  },
+  shop: {
+    label:'販売チーム型',
+    agents:[
+      {name:'サク',  role:'商品企画',   tool:'Claude', duty:'売るものと届け先を決める',       task:'企画中',   color:'#3b5bdb', hair:'#2b2b3a'},
+      {name:'カイ',  role:'商品説明',   tool:'Claude', duty:'良さが伝わる説明文を書く',       task:'作成中',   color:'#7c6bd9', hair:'#31456b'},
+      {name:'ユイ',  role:'撮影・画像', tool:'Claude', duty:'商品画像と見せ方を作る',         task:'撮影準備中',color:'#ef6aa5', hair:'#7a2e4d'},
+      {name:'ノア',role:'確認',       tool:'Codex',  duty:'価格と誤字を別目線で確認する',   task:'確認中',   color:'#4fb3a9', hair:'#173f3a'},
+      {name:'ヒナ',  role:'出品・記録', tool:'Claude', duty:'出品して数字を記録する',         task:'記録中',   color:'#f2a03d', hair:'#20303c'},
+    ],
+    missions:['商品を決める','説明文を書く','画像を作る','価格を確認する','出品する'],
+    flow:[
+      [0,null,'企画OK！','サクは 売るものを 決めた！'],
+      [1,null,'書けた！','カイは 商品説明を 書いた！'],
+      [2,'studio','撮影します！','ユイは スタジオで 商品画像を 撮った！'],
+      [3,'boss','確認お願いします','ノアの確認OK！ 価格も 決まった！'],
+      [4,null,'出品したよ','ヒナは 出品して 記録した！'],
+    ],
+  },
+  family: {
+    label:'生活サポート型',
+    agents:[
+      {name:'ヒナ',  role:'秘書・段取り', tool:'Claude', duty:'家族の予定をまとめる',       task:'段取り中', color:'#f2a03d', hair:'#20303c'},
+      {name:'レン',  role:'調べもの',     tool:'Claude', duty:'健診や手続きを調べる',       task:'調べもの中',color:'#58b368', hair:'#5a3d1e'},
+      {name:'カイ',  role:'計画',         tool:'Claude', duty:'献立や買い物リストを作る',   task:'計画中',   color:'#7c6bd9', hair:'#31456b'},
+      {name:'サク',  role:'声かけ',       tool:'Claude', duty:'やることを家族に知らせる',   task:'連絡中',   color:'#3b5bdb', hair:'#2b2b3a'},
+      {name:'ノア',role:'確認',         tool:'Codex',  duty:'漏れがないか別目線で確認する', task:'確認中',   color:'#4fb3a9', hair:'#173f3a'},
+    ],
+    missions:['予定を集める','必要なことを調べる','計画を立てる','家族に知らせる','漏れを確認する'],
+    flow:[
+      [0,null,'集めたよ','ヒナは 家族の予定を 集めた！'],
+      [1,null,'調べたよ','レンは 必要なことを 調べた！'],
+      [2,'cafe','計画できた☕','カイは カフェで 計画を 立てた！'],
+      [3,null,'知らせたよ','サクは 家族に 知らせた！'],
+      [4,null,'漏れなし！','ノアは 漏れが ないか 確かめた！'],
+    ],
+  },
+  data: {
+    label:'分析チーム型',
+    agents:[
+      {name:'レン',  role:'収集',   tool:'Claude', duty:'数字の元データを集める',     task:'収集中',   color:'#58b368', hair:'#5a3d1e'},
+      {name:'ノア',role:'集計',   tool:'Codex',  duty:'表を集計して計算する',       task:'集計中',   color:'#4fb3a9', hair:'#173f3a'},
+      {name:'カイ',  role:'分析',   tool:'Claude', duty:'増減の理由を読み解く',       task:'分析中',   color:'#7c6bd9', hair:'#31456b'},
+      {name:'ユイ',  role:'グラフ化',tool:'Claude', duty:'見やすいグラフにまとめる',   task:'作成中',   color:'#ef6aa5', hair:'#7a2e4d'},
+      {name:'サク',  role:'報告',   tool:'Claude', duty:'会議で報告する資料にまとめる', task:'報告準備中',color:'#3b5bdb', hair:'#2b2b3a'},
+    ],
+    missions:['データを集める','集計する','分析する','グラフにする','報告する'],
+    flow:[
+      [0,null,'集めたよ','レンは データを 集めた！'],
+      [1,null,'集計OK','ノアは 数字を 集計した！'],
+      [2,null,'見えてきた！','カイは 増えた理由を 読み解いた！'],
+      [3,null,'グラフ完成','ユイは グラフに まとめた！'],
+      [4,'meeting','報告します！','サクは 会議室で 報告した！'],
+    ],
+  },
+  general: {
+    label:'汎用チーム型',
+    agents:[
+      {name:'サク',  role:'企画・秘書', tool:'Claude',      duty:'頼まれた仕事を分けて割り振る', task:'段取り中', color:'#3b5bdb', hair:'#2b2b3a'},
+      {name:'レン',  role:'調査',       tool:'Claude',      duty:'必要な情報を集める',           task:'調べもの中',color:'#58b368', hair:'#5a3d1e'},
+      {name:'カイ',  role:'作成',       tool:'Claude',      duty:'文章や下書きを作る',           task:'作成中',   color:'#7c6bd9', hair:'#31456b'},
+      {name:'ノア',role:'確認',       tool:'Codex',       duty:'出来上がりを別目線で確認',     task:'レビュー中',color:'#4fb3a9', hair:'#173f3a'},
+      {name:'ヒナ',  role:'記録',       tool:'Claude',      duty:'結果を残して次に活かす',       task:'記録中',   color:'#f2a03d', hair:'#20303c'},
+    ],
+    missions:['仕事を分ける','情報を集める','下書きを作る','確認してもらう','記録して届ける'],
+    flow:[
+      [0,null,'割り振るよ！','サクは 仕事を 分けて 割り振った！'],
+      [1,'meeting','報告します！','レンは 会議室で 調べものを 報告した！'],
+      [2,null,'書けた！','カイは 下書きを 作った！'],
+      [3,'boss','確認お願いします','ノアの確認OK！ 社長の 承認も 出た！'],
+      [4,null,'届けたよ','ヒナは 結果を 記録して 届けた！'],
+    ],
+  },
+};
+function detectOrg(text){
+  if(/動画|youtube|tiktok|リール|映像/i.test(text)) return 'video';
+  if(/育児|子育て|献立|家事|保育/.test(text)) return 'family';
+  if(/投稿|インスタ|instagram|threads|スレッズ|発信|SNS/i.test(text)) return 'sns';
+  if(/ショップ|通販|BOOTH|出品|商品説明|ネット販売/i.test(text)) return 'shop';
+  if(/ブログ|記事|note|コラム|メディア/i.test(text)) return 'writing';
+  if(/データ|集計|分析|レポート|グラフ|売上/.test(text)) return 'data';
+  if(/見積|請求|メール|議事録|経理|事務|書類|日報|経費|営業|効率/.test(text)) return 'work';
+  if(/ニュース|調べ|リサーチ|要約|収集|まとめ/.test(text)) return 'research';
+  if(/アプリ|ツール|家計簿|CRM|システム|サイト|管理|予約|在庫/.test(text)) return 'dev';
+  return 'general';
+}
+
+/* ===== 組織を組み立てる ===== */
+function buildOrg(key, goalText){
+  document.querySelectorAll('.char,.desk.dyn').forEach(e=>e.remove());
+  const org = ORGS[key];
+  agents = org.agents.map((a,i)=>{
+    const d = desks[i];
+    const el = document.createElement('div');
+    el.className='desk dyn'; el.style.left=d.x+'px'; el.style.top=(d.y-148)+'px';
+    el.innerHTML = `<div class="top">🖥️ ${a.name} の机</div><span class="chip"><span id="chip${i}" style="background:${a.color}">${a.task}</span></span>`;
+    floorEl.appendChild(el);
+    const home = {x:d.x+66, y:d.y-48};
+    const c = document.createElement('div');
+    c.className='char'; c.style.left=home.x+'px'; c.style.top=home.y+'px';
+    c.innerHTML = `<div class="bubble" id="bub${i}"></div><div class="hair" style="background:${a.hair}"></div>`+
+      `<div class="head"></div><div class="body" style="background:${a.color}"></div><div class="feet"><i></i><i></i></div>`;
+    office.appendChild(c);
+    return {...a, el:c, x:home.x, y:home.y, home, deskEl:el};
+  });
+  const ul = document.getElementById('missions');
+  ul.innerHTML='';
+  org.missions.forEach(m=>{ const li=document.createElement('li'); li.textContent=m; ul.appendChild(li); });
+  document.getElementById('mcount').textContent='0/'+org.missions.length;
+  document.getElementById('orgName').textContent = org.label + (goalText ? '（'+goalText+'）' : '');
+  document.getElementById('orgTitle').textContent = org.label;
+  const rows = document.getElementById('orgrows');
+  rows.innerHTML='';
+  org.agents.forEach(a=>{
+    const r=document.createElement('div'); r.className='orgrow';
+    const dot=document.createElement('span'); dot.className='dot'; dot.style.background=a.color;
+    const b=document.createElement('b'); b.textContent=a.name+'（'+a.role+'）';
+    const tool=document.createElement('span'); tool.className='tool'; tool.textContent=a.tool;
+    const duty=document.createElement('span'); duty.textContent=a.duty;
+    r.append(dot,b,tool,duty); rows.appendChild(r);
+  });
+  return org;
+}
+
+/* ===== 歩行 ===== */
+async function walkX(i, tx, token){
+  const a=agents[i]; a.el.classList.add('walk');
+  while(a.x !== tx){
+    if(token!==RUN) return false;
+    const s = Math.sign(tx-a.x)*Math.min(TILE, Math.abs(tx-a.x)); a.x+=s;
+    a.el.classList.toggle('right', s>0); a.el.classList.toggle('left', s<0); a.el.classList.remove('up');
+    a.el.style.left=a.x+'px'; await wait(210);
+  }
+  a.el.classList.remove('walk','right','left'); return true;
+}
+async function walkY(i, ty, token){
+  const a=agents[i]; a.el.classList.add('walk');
+  while(a.y !== ty){
+    if(token!==RUN) return false;
+    const s = Math.sign(ty-a.y)*Math.min(TILE, Math.abs(ty-a.y)); a.y+=s;
+    a.el.classList.toggle('up', s<0); a.el.classList.remove('right','left');
+    a.el.style.top=a.y+'px'; await wait(210);
+  }
+  a.el.classList.remove('walk','up'); return true;
+}
+async function go(i, spot, token){
+  const a=agents[i];
+  if(a.y !== CORRIDOR && !(await walkY(i, CORRIDOR, token))) return false;
+  if(a.x !== spot.x && !(await walkX(i, spot.x, token))) return false;
+  if(spot.y !== CORRIDOR && !(await walkY(i, spot.y, token))) return false;
+  return true;
+}
+async function say(i, text, token, ms=1300){
+  const b=document.getElementById('bub'+i); if(!b) return;
+  b.textContent=text; agents[i].el.classList.add('say');
+  await wait(ms); if(token===RUN) agents[i].el.classList.remove('say');
+}
+let mins = 540;
+async function tick(to, token){
+  const from=mins, steps=12;
+  for(let s=1;s<=steps;s++){
+    if(token!==RUN) return;
+    mins = Math.round(from + (to-from)*s/steps);
+    document.getElementById('clock').textContent =
+      String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0');
+    document.getElementById('clockbar').style.width = ((mins-540)/540*100)+'%';
+    await wait(70);
+  }
+}
+
+/* ===== 1日の上演 ===== */
+async function playDay(org, goalText, token){
+  while(token===RUN){
+    mins=540;
+    document.getElementById('clock').textContent='09:00';
+    document.getElementById('clockbar').style.width='0%';
+    document.querySelectorAll('#missions li').forEach(li=>li.classList.remove('done'));
+    document.getElementById('mcount').textContent='0/'+org.missions.length;
+    let doneN=0;
+    for(let s=0;s<org.flow.length;s++){
+      if(token!==RUN) return;
+      const [ai, spot, line, doneText, effect] = org.flow[s];
+      const a = org.agents[ai];
+      setChip(ai,'出発！');
+      if(spot==='studio') document.getElementById('onair').classList.add('on');
+      if(spot){ if(!(await go(ai, SPOTS[spot], token))) return; }
+      if(token!==RUN) return;
+      await say(ai, line, token, 1400);
+      document.getElementById('onair').classList.remove('on');
+      const li=document.querySelectorAll('#missions li')[s];
+      if(li) li.classList.add('done');
+      doneN++; document.getElementById('mcount').textContent=doneN+'/'+org.missions.length;
+      dialog(doneText.replaceAll('{goal}', goalText || 'つくりたいもの'));
+      if(effect) effect();
+      setChip(ai, org.agents[ai].task);
+      if(spot){ if(!(await go(ai, agents[ai].home, token))) return; }
+      await tick(TIMES[s], token);
+    }
+    if(token!==RUN) return;
+    dialog('きょうの ミッションは 全部できた！ おつかれさま！'); await wait(3200);
+  }
+}
+
+/* ===== 生成 ===== */
+async function generate(goalText){
+  const token = ++RUN;
+  dialog('「'+goalText+'」の 組織を 考え中…');
+  await wait(900); if(token!==RUN) return;
+  const key = detectOrg(goalText);
+  const org = buildOrg(key, goalText);
+  dialog(org.label+'が あらわれた！ '+org.agents.length+'人の チームで「'+goalText+'」に とりかかる！');
+  await wait(1600); if(token!==RUN) return;
+  playDay(org, goalText, token);
+}
+document.getElementById('buildBtn').addEventListener('click', ()=>{
+  const v = document.getElementById('goal').value.trim();
+  generate(v || '家計簿アプリを作りたい');
+});
+document.getElementById('goal').addEventListener('keydown', e=>{
+  if(e.key==='Enter') document.getElementById('buildBtn').click();
+});
+document.querySelectorAll('[data-ex]').forEach(b=>b.addEventListener('click', ()=>{
+  document.getElementById('goal').value = b.dataset.ex;
+  generate(b.dataset.ex);
+}));
+
+/* ===== スマホ表示：舞台だけを画面幅に合わせて縮小（1180px以上は従来どおり等倍） ===== */
+(function fitStage(){
+  const scaler = document.getElementById('scaler'), wrap = document.getElementById('wrap');
+  const BASE = 1172, pc = window.matchMedia('(min-width:1180px)');
+  function fit(){
+    if(pc.matches){
+      scaler.classList.remove('scaled'); wrap.style.transform=''; scaler.style.height=''; return;
+    }
+    scaler.classList.add('scaled');
+    const k = Math.min(1, scaler.clientWidth / BASE);
+    wrap.style.transform = 'scale('+k+')';
+    scaler.style.height = Math.ceil(wrap.offsetHeight * k)+'px';
+  }
+  fit();
+  window.addEventListener('resize', fit);
+  if(window.ResizeObserver) new ResizeObserver(fit).observe(scaler);
+})();
+
+/* 初期表示：汎用チームで上演 */
+(function init(){
+  const org = buildOrg('general','');
+  const token = ++RUN;
+  playDay(org, '', token);
+})();
+</script>
+</body>
+</html>

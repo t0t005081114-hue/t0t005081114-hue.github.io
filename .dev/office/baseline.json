@@ -1,0 +1,1031 @@
+{
+ "detect": "function detectOrg(text){\n  if(/動画|youtube|tiktok|リール|映像/i.test(text)) return 'video';\n  if(/育児|子育て|献立|家事|保育/.test(text)) return 'family';\n  if(/投稿|インスタ|instagram|threads|スレッズ|発信|SNS/i.test(text)) return 'sns';\n  if(/ショップ|通販|BOOTH|出品|商品説明|ネット販売/i.test(text)) return 'shop';\n  if(/ブログ|記事|note|コラム|メディア/i.test(text)) return 'writing';\n  if(/データ|集計|分析|レポート|グラフ|売上/.test(text)) return 'data';\n  if(/見積|請求|メール|議事録|経理|事務|書類|日報|経費|営業|効率/.test(text)) return 'work';\n  if(/ニュース|調べ|リサーチ|要約|収集|まとめ/.test(text)) return 'research';\n  if(/アプリ|ツール|家計簿|CRM|システム|サイト|管理|予約|在庫/.test(text)) return 'dev';\n  return 'general';\n}",
+ "keys": [
+  "dev",
+  "sns",
+  "research",
+  "video",
+  "work",
+  "writing",
+  "shop",
+  "family",
+  "data",
+  "general"
+ ],
+ "orgs": {
+  "dev": {
+   "label": "開発チーム型",
+   "missions": [
+    "仕様を決める",
+    "設計図を書く",
+    "実装する",
+    "別AIに確認してもらう",
+    "公開する"
+   ],
+   "agents": [
+    {
+     "role": "企画・仕様",
+     "tool": "Claude",
+     "duty": "作るものを決めて仕様に落とす",
+     "task": "仕様作成中",
+     "color": "#3b5bdb",
+     "hair": "#2b2b3a",
+     "name": "アン"
+    },
+    {
+     "role": "設計",
+     "tool": "Claude",
+     "duty": "画面と動きの設計図を書く",
+     "task": "設計中",
+     "color": "#58b368",
+     "hair": "#5a3d1e",
+     "name": "ハル"
+    },
+    {
+     "role": "開発",
+     "tool": "Claude Code",
+     "duty": "設計図どおりに実装する",
+     "task": "コード作成中",
+     "color": "#4fb3a9",
+     "hair": "#173f3a",
+     "name": "クロエ"
+    },
+    {
+     "role": "確認",
+     "tool": "Codex",
+     "duty": "出来上がりを別目線でチェック",
+     "task": "レビュー中",
+     "color": "#7c6bd9",
+     "hair": "#31456b",
+     "name": "ソラ"
+    },
+    {
+     "role": "記録・公開",
+     "tool": "Claude",
+     "duty": "使い方をまとめて公開する",
+     "task": "記録中",
+     "color": "#f2a03d",
+     "hair": "#20303c",
+     "name": "リン"
+    }
+   ],
+   "flow": [
+    [
+     0,
+     null,
+     "仕様OK！",
+     "{goal}の 仕様が 決まった！"
+    ],
+    [
+     1,
+     "meeting",
+     "設計します",
+     "ハルは 会議室で 設計図を 書いた！"
+    ],
+    [
+     2,
+     null,
+     "実装中…",
+     "クロエは 設計図どおりに 作りはじめた！"
+    ],
+    [
+     3,
+     "boss",
+     "確認お願いします",
+     "ソラの確認OK！ 社長の 承認も 出た！"
+    ],
+    [
+     4,
+     null,
+     "公開します！",
+     "リンは {goal}を 公開した！"
+    ]
+   ],
+   "effects": [
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "sns": {
+   "label": "発信チーム型",
+   "missions": [
+    "ネタを集める",
+    "文章を書く",
+    "確認してもらう",
+    "撮影して投稿する",
+    "数字を記録する"
+   ],
+   "agents": [
+    {
+     "role": "調査",
+     "tool": "Claude",
+     "duty": "ネタと参考事例を集める",
+     "task": "調べもの中",
+     "color": "#58b368",
+     "hair": "#5a3d1e",
+     "name": "ハル"
+    },
+    {
+     "role": "文章",
+     "tool": "Claude",
+     "duty": "フックと本文を書く",
+     "task": "記事作成中",
+     "color": "#7c6bd9",
+     "hair": "#31456b",
+     "name": "ソラ"
+    },
+    {
+     "role": "撮影・投稿",
+     "tool": "Claude",
+     "duty": "画面を撮って投稿する",
+     "task": "文案作成中",
+     "color": "#ef6aa5",
+     "hair": "#7a2e4d",
+     "name": "ミオ"
+    },
+    {
+     "role": "確認",
+     "tool": "Codex",
+     "duty": "誤字と見た目をチェック",
+     "task": "レビュー中",
+     "color": "#4fb3a9",
+     "hair": "#173f3a",
+     "name": "クロエ"
+    },
+    {
+     "role": "記録",
+     "tool": "Claude",
+     "duty": "数字を見て次を決める",
+     "task": "記録中",
+     "color": "#f2a03d",
+     "hair": "#20303c",
+     "name": "リン"
+    }
+   ],
+   "flow": [
+    [
+     0,
+     "meeting",
+     "報告します！",
+     "ハルは ネタを 集めて 報告した！"
+    ],
+    [
+     1,
+     null,
+     "書けた！",
+     "ソラは フックの効いた 文章を 書いた！"
+    ],
+    [
+     3,
+     null,
+     "チェックOK",
+     "クロエの 確認が 通った！"
+    ],
+    [
+     2,
+     "studio",
+     "投稿します！",
+     "ミオは 撮影して そのまま 投稿した！"
+    ],
+    [
+     4,
+     null,
+     "記録したよ",
+     "リンは 数字を 記録した。いいねが 増えた！"
+    ]
+   ],
+   "effects": [
+    null,
+    null,
+    null,
+    null,
+    "()=>{bump('sns1',37);bump('sns2',24);bump('sns3',3);}"
+   ]
+  },
+  "research": {
+   "label": "調査チーム型",
+   "missions": [
+    "情報源を巡回する",
+    "要約する",
+    "出典を確かめる",
+    "形を整える",
+    "毎朝届ける"
+   ],
+   "agents": [
+    {
+     "role": "収集",
+     "tool": "Claude",
+     "duty": "決まった情報源を毎日巡回する",
+     "task": "収集中",
+     "color": "#58b368",
+     "hair": "#5a3d1e",
+     "name": "ハル"
+    },
+    {
+     "role": "要約",
+     "tool": "Claude",
+     "duty": "集めた情報を短くまとめる",
+     "task": "要約中",
+     "color": "#7c6bd9",
+     "hair": "#31456b",
+     "name": "ソラ"
+    },
+    {
+     "role": "確かめ",
+     "tool": "Codex",
+     "duty": "出典と数字が合うか確認する",
+     "task": "確認中",
+     "color": "#4fb3a9",
+     "hair": "#173f3a",
+     "name": "クロエ"
+    },
+    {
+     "role": "届ける",
+     "tool": "Claude",
+     "duty": "毎朝同じ形で届ける",
+     "task": "配信準備中",
+     "color": "#f2a03d",
+     "hair": "#20303c",
+     "name": "リン"
+    }
+   ],
+   "flow": [
+    [
+     0,
+     null,
+     "集めたよ！",
+     "ハルは きょうの情報を 集めた！"
+    ],
+    [
+     1,
+     null,
+     "まとめた！",
+     "ソラは 短く 要約した！"
+    ],
+    [
+     2,
+     "meeting",
+     "確認します",
+     "クロエは 会議室で 出典を 確かめた！"
+    ],
+    [
+     3,
+     null,
+     "整えたよ",
+     "リンは 届ける形に 整えた！"
+    ],
+    [
+     3,
+     "cafe",
+     "届けました☕",
+     "{goal}の 仕組みが できた！ 明日から 毎朝届く！"
+    ]
+   ],
+   "effects": [
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "video": {
+   "label": "映像チーム型",
+   "missions": [
+    "企画を決める",
+    "台本を書く",
+    "撮影する",
+    "確認してもらう",
+    "投稿を予約する"
+   ],
+   "agents": [
+    {
+     "role": "企画",
+     "tool": "Claude",
+     "duty": "テーマと構成を決める",
+     "task": "企画中",
+     "color": "#3b5bdb",
+     "hair": "#2b2b3a",
+     "name": "アン"
+    },
+    {
+     "role": "台本",
+     "tool": "Claude",
+     "duty": "台本とテロップを書く",
+     "task": "台本作成中",
+     "color": "#7c6bd9",
+     "hair": "#31456b",
+     "name": "ソラ"
+    },
+    {
+     "role": "撮影",
+     "tool": "Claude",
+     "duty": "画面収録と素材づくり",
+     "task": "撮影準備中",
+     "color": "#ef6aa5",
+     "hair": "#7a2e4d",
+     "name": "ミオ"
+    },
+    {
+     "role": "確認",
+     "tool": "Codex",
+     "duty": "流れと誤字をチェック",
+     "task": "レビュー中",
+     "color": "#4fb3a9",
+     "hair": "#173f3a",
+     "name": "クロエ"
+    },
+    {
+     "role": "投稿",
+     "tool": "Claude",
+     "duty": "投稿文と予約を担当",
+     "task": "投稿準備中",
+     "color": "#f2a03d",
+     "hair": "#20303c",
+     "name": "リン"
+    }
+   ],
+   "flow": [
+    [
+     0,
+     "meeting",
+     "企画OK！",
+     "アンは 会議室で 企画を 決めた！"
+    ],
+    [
+     1,
+     null,
+     "台本できた！",
+     "ソラは 台本を 書いた！"
+    ],
+    [
+     2,
+     "studio",
+     "撮影します！",
+     "ミオは スタジオで 撮影した！"
+    ],
+    [
+     3,
+     "boss",
+     "確認お願いします",
+     "クロエの確認OK！ 社長の 承認も 出た！"
+    ],
+    [
+     4,
+     null,
+     "予約したよ",
+     "リンは 投稿を 予約した！"
+    ]
+   ],
+   "effects": [
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "work": {
+   "label": "業務効率化チーム型",
+   "missions": [
+    "仕事を受け付ける",
+    "下書きを作る",
+    "数字を確認する",
+    "承認をもらう",
+    "送って記録する"
+   ],
+   "agents": [
+    {
+     "role": "受付・振り分け",
+     "tool": "Claude",
+     "duty": "頼まれた仕事を受けて振り分ける",
+     "task": "受付中",
+     "color": "#f2a03d",
+     "hair": "#20303c",
+     "name": "リン"
+    },
+    {
+     "role": "作成",
+     "tool": "Claude",
+     "duty": "見積書や書類の下書きを作る",
+     "task": "作成中",
+     "color": "#7c6bd9",
+     "hair": "#31456b",
+     "name": "ソラ"
+    },
+    {
+     "role": "確認",
+     "tool": "Codex",
+     "duty": "数字と宛先を別目線で確認する",
+     "task": "確認中",
+     "color": "#4fb3a9",
+     "hair": "#173f3a",
+     "name": "クロエ"
+    },
+    {
+     "role": "承認まわし",
+     "tool": "Claude",
+     "duty": "社長の承認を取りに行く",
+     "task": "段取り中",
+     "color": "#3b5bdb",
+     "hair": "#2b2b3a",
+     "name": "アン"
+    },
+    {
+     "role": "記録",
+     "tool": "Claude",
+     "duty": "済んだ仕事を台帳に残す",
+     "task": "記録中",
+     "color": "#58b368",
+     "hair": "#5a3d1e",
+     "name": "ハル"
+    }
+   ],
+   "flow": [
+    [
+     0,
+     null,
+     "受け付けたよ",
+     "リンは 仕事を 受け付けた！"
+    ],
+    [
+     1,
+     null,
+     "作成中…",
+     "ソラは 下書きを 作った！"
+    ],
+    [
+     2,
+     null,
+     "チェックOK",
+     "クロエは 数字と宛先を 確かめた！"
+    ],
+    [
+     3,
+     "boss",
+     "承認お願いします",
+     "アンは 社長室で 承認を もらった！"
+    ],
+    [
+     4,
+     null,
+     "送って記録！",
+     "ハルは 送って 台帳に 記録した！"
+    ]
+   ],
+   "effects": [
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "writing": {
+   "label": "記事チーム型",
+   "missions": [
+    "ネタを集める",
+    "構成を決める",
+    "本文を書く",
+    "校正する",
+    "公開する"
+   ],
+   "agents": [
+    {
+     "role": "調査",
+     "tool": "Claude",
+     "duty": "ネタと事例を集める",
+     "task": "調べもの中",
+     "color": "#58b368",
+     "hair": "#5a3d1e",
+     "name": "ハル"
+    },
+    {
+     "role": "構成",
+     "tool": "Claude",
+     "duty": "読む順番と見出しを決める",
+     "task": "構成中",
+     "color": "#3b5bdb",
+     "hair": "#2b2b3a",
+     "name": "アン"
+    },
+    {
+     "role": "執筆",
+     "tool": "Claude",
+     "duty": "本文を書く",
+     "task": "執筆中",
+     "color": "#7c6bd9",
+     "hair": "#31456b",
+     "name": "ソラ"
+    },
+    {
+     "role": "校正",
+     "tool": "Codex",
+     "duty": "誤字と事実を別目線で確認する",
+     "task": "確認中",
+     "color": "#4fb3a9",
+     "hair": "#173f3a",
+     "name": "クロエ"
+    },
+    {
+     "role": "公開",
+     "tool": "Claude",
+     "duty": "タイトルと画像を付けて公開する",
+     "task": "仕上げ中",
+     "color": "#ef6aa5",
+     "hair": "#7a2e4d",
+     "name": "ミオ"
+    }
+   ],
+   "flow": [
+    [
+     0,
+     "meeting",
+     "報告します！",
+     "ハルは 会議室で ネタを 報告した！"
+    ],
+    [
+     1,
+     null,
+     "構成OK！",
+     "アンは 見出しの 構成を 決めた！"
+    ],
+    [
+     2,
+     null,
+     "書けた！",
+     "ソラは 本文を 書いた！"
+    ],
+    [
+     3,
+     null,
+     "校正OK",
+     "クロエは 誤字と事実を 確かめた！"
+    ],
+    [
+     4,
+     null,
+     "公開します！",
+     "ミオは {goal}を 公開した！"
+    ]
+   ],
+   "effects": [
+    null,
+    null,
+    null,
+    null,
+    "()=>{bump('sns3',2);}"
+   ]
+  },
+  "shop": {
+   "label": "販売チーム型",
+   "missions": [
+    "商品を決める",
+    "説明文を書く",
+    "画像を作る",
+    "価格を確認する",
+    "出品する"
+   ],
+   "agents": [
+    {
+     "role": "商品企画",
+     "tool": "Claude",
+     "duty": "売るものと届け先を決める",
+     "task": "企画中",
+     "color": "#3b5bdb",
+     "hair": "#2b2b3a",
+     "name": "アン"
+    },
+    {
+     "role": "商品説明",
+     "tool": "Claude",
+     "duty": "良さが伝わる説明文を書く",
+     "task": "作成中",
+     "color": "#7c6bd9",
+     "hair": "#31456b",
+     "name": "ソラ"
+    },
+    {
+     "role": "撮影・画像",
+     "tool": "Claude",
+     "duty": "商品画像と見せ方を作る",
+     "task": "撮影準備中",
+     "color": "#ef6aa5",
+     "hair": "#7a2e4d",
+     "name": "ミオ"
+    },
+    {
+     "role": "確認",
+     "tool": "Codex",
+     "duty": "価格と誤字を別目線で確認する",
+     "task": "確認中",
+     "color": "#4fb3a9",
+     "hair": "#173f3a",
+     "name": "クロエ"
+    },
+    {
+     "role": "出品・記録",
+     "tool": "Claude",
+     "duty": "出品して数字を記録する",
+     "task": "記録中",
+     "color": "#f2a03d",
+     "hair": "#20303c",
+     "name": "リン"
+    }
+   ],
+   "flow": [
+    [
+     0,
+     null,
+     "企画OK！",
+     "アンは 売るものを 決めた！"
+    ],
+    [
+     1,
+     null,
+     "書けた！",
+     "ソラは 商品説明を 書いた！"
+    ],
+    [
+     2,
+     "studio",
+     "撮影します！",
+     "ミオは スタジオで 商品画像を 撮った！"
+    ],
+    [
+     3,
+     "boss",
+     "確認お願いします",
+     "クロエの確認OK！ 価格も 決まった！"
+    ],
+    [
+     4,
+     null,
+     "出品したよ",
+     "リンは 出品して 記録した！"
+    ]
+   ],
+   "effects": [
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "family": {
+   "label": "生活サポート型",
+   "missions": [
+    "予定を集める",
+    "必要なことを調べる",
+    "計画を立てる",
+    "家族に知らせる",
+    "漏れを確認する"
+   ],
+   "agents": [
+    {
+     "role": "秘書・段取り",
+     "tool": "Claude",
+     "duty": "家族の予定をまとめる",
+     "task": "段取り中",
+     "color": "#f2a03d",
+     "hair": "#20303c",
+     "name": "リン"
+    },
+    {
+     "role": "調べもの",
+     "tool": "Claude",
+     "duty": "健診や手続きを調べる",
+     "task": "調べもの中",
+     "color": "#58b368",
+     "hair": "#5a3d1e",
+     "name": "ハル"
+    },
+    {
+     "role": "計画",
+     "tool": "Claude",
+     "duty": "献立や買い物リストを作る",
+     "task": "計画中",
+     "color": "#7c6bd9",
+     "hair": "#31456b",
+     "name": "ソラ"
+    },
+    {
+     "role": "声かけ",
+     "tool": "Claude",
+     "duty": "やることを家族に知らせる",
+     "task": "連絡中",
+     "color": "#3b5bdb",
+     "hair": "#2b2b3a",
+     "name": "アン"
+    },
+    {
+     "role": "確認",
+     "tool": "Codex",
+     "duty": "漏れがないか別目線で確認する",
+     "task": "確認中",
+     "color": "#4fb3a9",
+     "hair": "#173f3a",
+     "name": "クロエ"
+    }
+   ],
+   "flow": [
+    [
+     0,
+     null,
+     "集めたよ",
+     "リンは 家族の予定を 集めた！"
+    ],
+    [
+     1,
+     null,
+     "調べたよ",
+     "ハルは 必要なことを 調べた！"
+    ],
+    [
+     2,
+     "cafe",
+     "計画できた☕",
+     "ソラは カフェで 計画を 立てた！"
+    ],
+    [
+     3,
+     null,
+     "知らせたよ",
+     "アンは 家族に 知らせた！"
+    ],
+    [
+     4,
+     null,
+     "漏れなし！",
+     "クロエは 漏れが ないか 確かめた！"
+    ]
+   ],
+   "effects": [
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "data": {
+   "label": "分析チーム型",
+   "missions": [
+    "データを集める",
+    "集計する",
+    "分析する",
+    "グラフにする",
+    "報告する"
+   ],
+   "agents": [
+    {
+     "role": "収集",
+     "tool": "Claude",
+     "duty": "数字の元データを集める",
+     "task": "収集中",
+     "color": "#58b368",
+     "hair": "#5a3d1e",
+     "name": "ハル"
+    },
+    {
+     "role": "集計",
+     "tool": "Codex",
+     "duty": "表を集計して計算する",
+     "task": "集計中",
+     "color": "#4fb3a9",
+     "hair": "#173f3a",
+     "name": "クロエ"
+    },
+    {
+     "role": "分析",
+     "tool": "Claude",
+     "duty": "増減の理由を読み解く",
+     "task": "分析中",
+     "color": "#7c6bd9",
+     "hair": "#31456b",
+     "name": "ソラ"
+    },
+    {
+     "role": "グラフ化",
+     "tool": "Claude",
+     "duty": "見やすいグラフにまとめる",
+     "task": "作成中",
+     "color": "#ef6aa5",
+     "hair": "#7a2e4d",
+     "name": "ミオ"
+    },
+    {
+     "role": "報告",
+     "tool": "Claude",
+     "duty": "会議で報告する資料にまとめる",
+     "task": "報告準備中",
+     "color": "#3b5bdb",
+     "hair": "#2b2b3a",
+     "name": "アン"
+    }
+   ],
+   "flow": [
+    [
+     0,
+     null,
+     "集めたよ",
+     "ハルは データを 集めた！"
+    ],
+    [
+     1,
+     null,
+     "集計OK",
+     "クロエは 数字を 集計した！"
+    ],
+    [
+     2,
+     null,
+     "見えてきた！",
+     "ソラは 増えた理由を 読み解いた！"
+    ],
+    [
+     3,
+     null,
+     "グラフ完成",
+     "ミオは グラフに まとめた！"
+    ],
+    [
+     4,
+     "meeting",
+     "報告します！",
+     "アンは 会議室で 報告した！"
+    ]
+   ],
+   "effects": [
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  "general": {
+   "label": "汎用チーム型",
+   "missions": [
+    "仕事を分ける",
+    "情報を集める",
+    "下書きを作る",
+    "確認してもらう",
+    "記録して届ける"
+   ],
+   "agents": [
+    {
+     "role": "企画・秘書",
+     "tool": "Claude",
+     "duty": "頼まれた仕事を分けて割り振る",
+     "task": "段取り中",
+     "color": "#3b5bdb",
+     "hair": "#2b2b3a",
+     "name": "アン"
+    },
+    {
+     "role": "調査",
+     "tool": "Claude",
+     "duty": "必要な情報を集める",
+     "task": "調べもの中",
+     "color": "#58b368",
+     "hair": "#5a3d1e",
+     "name": "ハル"
+    },
+    {
+     "role": "作成",
+     "tool": "Claude",
+     "duty": "文章や下書きを作る",
+     "task": "作成中",
+     "color": "#7c6bd9",
+     "hair": "#31456b",
+     "name": "ソラ"
+    },
+    {
+     "role": "確認",
+     "tool": "Codex",
+     "duty": "出来上がりを別目線で確認",
+     "task": "レビュー中",
+     "color": "#4fb3a9",
+     "hair": "#173f3a",
+     "name": "クロエ"
+    },
+    {
+     "role": "記録",
+     "tool": "Claude",
+     "duty": "結果を残して次に活かす",
+     "task": "記録中",
+     "color": "#f2a03d",
+     "hair": "#20303c",
+     "name": "リン"
+    }
+   ],
+   "flow": [
+    [
+     0,
+     null,
+     "割り振るよ！",
+     "アンは 仕事を 分けて 割り振った！"
+    ],
+    [
+     1,
+     "meeting",
+     "報告します！",
+     "ハルは 会議室で 調べものを 報告した！"
+    ],
+    [
+     2,
+     null,
+     "書けた！",
+     "ソラは 下書きを 作った！"
+    ],
+    [
+     3,
+     "boss",
+     "確認お願いします",
+     "クロエの確認OK！ 社長の 承認も 出た！"
+    ],
+    [
+     4,
+     null,
+     "届けたよ",
+     "リンは 結果を 記録して 届けた！"
+    ]
+   ],
+   "effects": [
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  }
+ },
+ "walk": [
+  "async function walkX(i, tx, token){\n  const a=agents[i]; a.el.classList.add('walk');\n  while(a.x !== tx){\n    if(token!==RUN) return false;\n    const s = Math.sign(tx-a.x)*Math.min(TILE, Math.abs(tx-a.x)); a.x+=s;\n    a.el.classList.toggle('right', s>0); a.el.classList.toggle('left', s<0); a.el.classList.remove('up');\n    a.el.style.left=a.x+'px'; await wait(210);\n  }\n  a.el.classList.remove('walk','right','left'); return true;\n}",
+  "async function walkY(i, ty, token){\n  const a=agents[i]; a.el.classList.add('walk');\n  while(a.y !== ty){\n    if(token!==RUN) return false;\n    const s = Math.sign(ty-a.y)*Math.min(TILE, Math.abs(ty-a.y)); a.y+=s;\n    a.el.classList.toggle('up', s<0); a.el.classList.remove('right','left');\n    a.el.style.top=a.y+'px'; await wait(210);\n  }\n  a.el.classList.remove('walk','up'); return true;\n}",
+  "async function go(i, spot, token){\n  const a=agents[i];\n  if(a.y !== CORRIDOR && !(await walkY(i, CORRIDOR, token))) return false;\n  if(a.x !== spot.x && !(await walkX(i, spot.x, token))) return false;\n  if(spot.y !== CORRIDOR && !(await walkY(i, spot.y, token))) return false;\n  return true;\n}",
+  "async function say(i, text, token, ms=1300){\n  const b=document.getElementById('bub'+i); if(!b) return;\n  b.textContent=text; agents[i].el.classList.add('say');\n  await wait(ms); if(token===RUN) agents[i].el.classList.remove('say');\n}",
+  "async function tick(to, token){\n  const from=mins, steps=12;\n  for(let s=1;s<=steps;s++){\n    if(token!==RUN) return;\n    mins = Math.round(from + (to-from)*s/steps);\n    document.getElementById('clock').textContent =\n      String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0');\n    document.getElementById('clockbar').style.width = ((mins-540)/540*100)+'%';\n    await wait(70);\n  }\n}",
+  "async function playDay(org, goalText, token){\n  while(token===RUN){\n    mins=540;\n    document.getElementById('clock').textContent='09:00';\n    document.getElementById('clockbar').style.width='0%';\n    document.querySelectorAll('#missions li').forEach(li=>li.classList.remove('done'));\n    document.getElementById('mcount').textContent='0/'+org.missions.length;\n    let doneN=0;\n    for(let s=0;s<org.flow.length;s++){\n      if(token!==RUN) return;\n      const [ai, spot, line, doneText, effect] = org.flow[s];\n      const a = org.agents[ai];\n      setChip(ai,'出発！');\n      if(spot==='studio') document.getElementById('onair').classList.add('on');\n      if(spot){ if(!(await go(ai, SPOTS[spot], token))) return; }\n      if(token!==RUN) return;\n      await say(ai, line, token, 1400);\n      document.getElementById('onair').classList.remove('on');\n      const li=document.querySelectorAll('#missions li')[s];\n      if(li) li.classList.add('done');\n      doneN++; document.getElementById('mcount').textContent=doneN+'/'+org.missions.length;\n      dialog(doneText.replaceAll('{goal}', goalText || 'つくりたいもの'));\n      if(effect) effect();\n      setChip(ai, org.agents[ai].task);\n      if(spot){ if(!(await go(ai, agents[ai].home, token))) return; }\n      await tick(TIMES[s], token);\n    }\n    if(token!==RUN) return;\n    dialog('きょうの ミッションは 全部できた！ おつかれさま！'); await wait(3200);\n  }\n}"
+ ],
+ "consts": {
+  "TILE": 40,
+  "CORRIDOR": 272,
+  "desks": [
+   {
+    "x": 36,
+    "y": 212
+   },
+   {
+    "x": 252,
+    "y": 212
+   },
+   {
+    "x": 468,
+    "y": 212
+   },
+   {
+    "x": 36,
+    "y": 372
+   },
+   {
+    "x": 252,
+    "y": 372
+   },
+   {
+    "x": 468,
+    "y": 372
+   }
+  ],
+  "SPOTS": {
+   "studio": {
+    "x": 128,
+    "y": 52
+   },
+   "meeting": {
+    "x": 452,
+    "y": 52
+   },
+   "boss": {
+    "x": 788,
+    "y": 52
+   },
+   "cafe": {
+    "x": 856,
+    "y": 300
+   }
+  },
+  "TIMES": [
+   620,
+   730,
+   850,
+   960,
+   1080
+  ]
+ }
+}

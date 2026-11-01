@@ -102,17 +102,55 @@ t("不正な回答は拒否（7問だけ・範囲外・小数）", () => {
   assert.throws(() => S.decide([0, 0, 0, 0, 0, 0, 0, null]));
 });
 
+// ---- 固定ID・再計算・ペース ----
+t("全選択肢に固定IDがあり、重複しない（形式 q番号-英字）", () => {
+  const ids = S.QUESTIONS.flatMap((q, i) => q.options.map(o => o.id));
+  ids.forEach(id => assert.ok(/^q[1-8]-[a-z0-9]+$/.test(id), id));
+  assert.strictEqual(new Set(ids).size, ids.length);
+  S.QUESTIONS.forEach((q, i) => q.options.forEach(o => assert.ok(o.id.startsWith("q" + (i + 1) + "-"), o.id)));
+});
+t("固定IDの一覧が変わっていない（IDを変えると共有・記録が壊れるため）", () => {
+  assert.strictEqual(S.QUESTIONS.map(q => q.options.map(o => o.id).join(",")).join("|"),
+    "q1-life,q1-research,q1-work,q1-post,q1-unsure|q2-none,q2-chat,q2-docs,q2-built|q3-lt1h,q3-1to3h,q3-gt3h|q4-money,q4-scattered,q4-progress,q4-writing,q4-none|q5-manager,q5-stock,q5-board,q5-drafts,q5-undecided|q6-phone,q6-ok,q6-good|q7-small,q7-solid|q8-home,q8-study,q8-work,q8-sns");
+});
+t("全パターンで 回答番号→ID→回答番号 が元に戻る", () => {
+  results.forEach(([a]) => assert.deepStrictEqual(S.fromIds(S.toIds(a)), a));
+});
+t("回答を変えても点数は重複加算されない（毎回回答から計算し直す）", () => {
+  const a = [0, 1, 1, 0, 0, 1, 1, 0];
+  const before = JSON.stringify(S.score(a));
+  for (let k = 0; k < 5; k++) S.decide(a);
+  const changed = a.slice(); changed[0] = 2; S.decide(changed);
+  assert.strictEqual(JSON.stringify(S.score(a)), before);
+  const total = s => Object.values(s).reduce((x, y) => x + y, 0);
+  results.forEach(([a, r]) => {
+    const expect = a.reduce((sum, x, i) => sum + Object.values(S.QUESTIONS[i].options[x].pts).reduce((p, q) => p + q, 0), 0);
+    assert.strictEqual(total(r.scores), expect, a.join());
+  });
+});
+t("ペース：準備度4以上はゆっくり、3以下は標準（タイプとは別に決まる）", () => {
+  assert.strictEqual(S.pace(4).id, "slow"); assert.strictEqual(S.pace(8).id, "slow");
+  assert.strictEqual(S.pace(3).id, "normal"); assert.strictEqual(S.pace(0).id, "normal");
+  // 初心者でも分野がそろえば分野タイプ＋ゆっくりペース
+  const r = S.decide([0, 0, 0, 0, 0, 0, 0, 0]); assert.strictEqual(r.type, "A"); assert.strictEqual(S.pace(r.readiness).id, "slow");
+});
+
 // ---- 原稿 ----
 t("全タイプ：Day1〜7 が7つ・各日に作業と完了条件・機能・つまずき3つ・制作指示", () => {
   S.TYPE_IDS.forEach(k => {
     const T = S.TYPES[k];
     ["name", "catch", "summary", "tool", "toolDesc", "image"].forEach(f => assert.ok(T[f] && T[f].length >= 3, k + "." + f));
+    assert.ok(!/人。$/.test(T.catch), k + " キャッチコピーで性格を言い切らない");
     assert.strictEqual(T.days.length, 7, k);
     T.days.forEach((d, i) => { assert.ok(d.t && d.d && d.done, k + " day" + (i + 1)); });
     assert.ok(T.features.length >= 4 && T.features.length <= 6, k + " features");
     assert.strictEqual(T.pitfalls.length, 3, k);
     const p = S.prompt(k); assert.ok(p.includes(T.tool) && p.includes("HTMLファイル1つ"), k);
   });
+});
+t("公開文言に、存在しない特典・未確定の表現・依頼形の誘導がない", () => {
+  const all = JSON.stringify(S.TYPES) + S.FIX_PROMPT;
+  ["タイプ別", "配布中", "公開予定", "近日公開", "登録してください", "プロフィールから", "稼げ", "収益化", "CRM", "/tools/"].forEach(w => assert.ok(!all.includes(w), w));
 });
 t("作例リンクは、リポジトリ内に実在するページだけ", () => {
   const fs = require("fs");

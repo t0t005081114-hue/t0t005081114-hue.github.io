@@ -21,79 +21,79 @@
       id: "q1", kind: "topic",
       text: "AIで、いちばん楽にしたいことは？",
       options: [
-        { label: "お金・予定・家のことなど、生活の面倒", pts: { A: 3 }, reason: "生活の面倒を楽にしたい" },
-        { label: "調べもの・情報集め", pts: { B: 3 }, reason: "調べもの・情報集めを楽にしたい" },
-        { label: "仕事の作業", pts: { C: 3 }, reason: "仕事の作業を楽にしたい" },
-        { label: "SNS発信・副業の準備", pts: { D: 3 }, reason: "発信や副業につなげたい" },
-        { label: "まだぼんやり。まず何か作ってみたい", pts: { E: 3 }, reason: "まず何か作ってみたい" }
+        { id: "q1-life", label: "お金・予定・家のことなど、生活の面倒", pts: { A: 3 }, reason: "生活の面倒を楽にしたい" },
+        { id: "q1-research", label: "調べもの・情報集め", pts: { B: 3 }, reason: "調べもの・情報集めを楽にしたい" },
+        { id: "q1-work", label: "仕事の作業", pts: { C: 3 }, reason: "仕事の作業を楽にしたい" },
+        { id: "q1-post", label: "SNS発信・副業の準備", pts: { D: 3 }, reason: "発信や副業につなげたい" },
+        { id: "q1-unsure", label: "まだぼんやり。まず何か作ってみたい", pts: { E: 3 }, reason: "まず何か作ってみたい" }
       ]
     },
     {
       id: "q2", kind: "ready",
       text: "AIをどれくらい使ったことがありますか？",
       options: [
-        { label: "ほとんど使ったことがない", pts: { E: 2 }, reason: "AIはほとんど使ったことがない" },
-        { label: "質問や会話をしたことがある", pts: { E: 1 }, reason: "AIは会話で使う程度" },
-        { label: "文章や表を作らせたことがある", pts: {} },
-        { label: "小さなツールやページを作ったことがある", pts: {} }
+        { id: "q2-none", label: "ほとんど使ったことがない", pts: { E: 2 }, reason: "AIはほとんど使ったことがない" },
+        { id: "q2-chat", label: "質問や会話をしたことがある", pts: { E: 1 }, reason: "AIは会話で使う程度" },
+        { id: "q2-docs", label: "文章や表を作らせたことがある", pts: {} },
+        { id: "q2-built", label: "小さなツールやページを作ったことがある", pts: {} }
       ]
     },
     {
       id: "q3", kind: "ready",
       text: "1週間で、制作に使えそうな時間は？",
       options: [
-        { label: "1時間未満", pts: { E: 2 }, reason: "使える時間は週1時間未満" },
-        { label: "1〜3時間", pts: { E: 1 }, reason: "使える時間は週1〜3時間" },
-        { label: "3時間以上", pts: {} }
+        { id: "q3-lt1h", label: "1時間未満", pts: { E: 2 }, reason: "使える時間は週1時間未満" },
+        { id: "q3-1to3h", label: "1〜3時間", pts: { E: 1 }, reason: "使える時間は週1〜3時間" },
+        { id: "q3-gt3h", label: "3時間以上", pts: {} }
       ]
     },
     {
       id: "q4", kind: "topic",
       text: "ふだん「面倒だな」と感じるのは？",
       options: [
-        { label: "家計・支払い・家の予定の管理", pts: { A: 2 }, reason: "家計や予定の管理が面倒" },
-        { label: "調べたことが散らばって、あとで見つからない", pts: { B: 2 }, reason: "調べたことが散らばる" },
-        { label: "仕事の進み具合の確認や、同じ作業のくり返し", pts: { C: 2 }, reason: "仕事の進み具合の管理が面倒" },
-        { label: "投稿や文章を考えること", pts: { D: 2 }, reason: "投稿や文章づくりが面倒" },
-        { label: "特に思いつかない", pts: { E: 2 }, reason: "面倒なことが特に思いつかない" }
+        { id: "q4-money", label: "家計・支払い・家の予定の管理", pts: { A: 2 }, reason: "家計や予定の管理が面倒" },
+        { id: "q4-scattered", label: "調べたことが散らばって、あとで見つからない", pts: { B: 2 }, reason: "調べたことが散らばる" },
+        { id: "q4-progress", label: "仕事の進み具合の確認や、同じ作業のくり返し", pts: { C: 2 }, reason: "仕事の進み具合の管理が面倒" },
+        { id: "q4-writing", label: "投稿や文章を考えること", pts: { D: 2 }, reason: "投稿や文章づくりが面倒" },
+        { id: "q4-none", label: "特に思いつかない", pts: { E: 2 }, reason: "面倒なことが特に思いつかない" }
       ]
     },
     {
       id: "q5", kind: "topic",
       text: "作ってみたいものに近いのは？",
       options: [
-        { label: "自分や家族のための管理ツール", pts: { A: 2 }, reason: "自分や家族の管理ツールを作りたい" },
-        { label: "情報をためて、あとで探せる仕組み", pts: { B: 2 }, reason: "情報をためて探せる仕組みがほしい" },
-        { label: "仕事の一覧・進み具合の管理表", pts: { C: 2 }, reason: "仕事の管理表を作りたい" },
-        { label: "投稿や文章の下書きを手伝う道具", pts: { D: 2 }, reason: "投稿の下書きを手伝う道具がほしい" },
-        { label: "まだ決まっていない", pts: { E: 2 }, reason: "作りたいものはまだ決まっていない" }
+        { id: "q5-manager", label: "自分や家族のための管理ツール", pts: { A: 2 }, reason: "自分や家族の管理ツールを作りたい" },
+        { id: "q5-stock", label: "情報をためて、あとで探せる仕組み", pts: { B: 2 }, reason: "情報をためて探せる仕組みがほしい" },
+        { id: "q5-board", label: "仕事の一覧・進み具合の管理表", pts: { C: 2 }, reason: "仕事の管理表を作りたい" },
+        { id: "q5-drafts", label: "投稿や文章の下書きを手伝う道具", pts: { D: 2 }, reason: "投稿の下書きを手伝う道具がほしい" },
+        { id: "q5-undecided", label: "まだ決まっていない", pts: { E: 2 }, reason: "作りたいものはまだ決まっていない" }
       ]
     },
     {
       id: "q6", kind: "ready",
       text: "パソコンの操作は？",
       options: [
-        { label: "苦手。ふだんはスマホが中心", pts: { E: 2 }, reason: "ふだんはスマホが中心" },
-        { label: "ふつうに使える", pts: {} },
-        { label: "得意なほう", pts: {} }
+        { id: "q6-phone", label: "苦手。ふだんはスマホが中心", pts: { E: 2 }, reason: "ふだんはスマホが中心" },
+        { id: "q6-ok", label: "ふつうに使える", pts: {} },
+        { id: "q6-good", label: "得意なほう", pts: {} }
       ]
     },
     {
       id: "q7", kind: "ready",
       text: "最初の1作は、どちらがいい？",
       options: [
-        { label: "1日で動く、小さなもの", pts: { E: 2 }, reason: "最初は小さく完成させたい" },
-        { label: "1週間かけて、自分用にしっかり", pts: {} }
+        { id: "q7-small", label: "1日で動く、小さなもの", pts: { E: 2 }, reason: "最初は小さく完成させたい" },
+        { id: "q7-solid", label: "1週間かけて、自分用にしっかり", pts: {} }
       ]
     },
     {
       id: "q8", kind: "topic",
       text: "作ったものを、いちばん使いたい場面は？",
       options: [
-        { label: "家・プライベート", pts: { A: 2 }, reason: "使う場面は家・プライベート" },
-        { label: "調べもの・勉強", pts: { B: 2 }, reason: "使う場面は調べもの・勉強" },
-        { label: "仕事", pts: { C: 2 }, reason: "使う場面は仕事" },
-        { label: "SNS・副業", pts: { D: 2 }, reason: "使う場面はSNS・副業" }
+        { id: "q8-home", label: "家・プライベート", pts: { A: 2 }, reason: "使う場面は家・プライベート" },
+        { id: "q8-study", label: "調べもの・勉強", pts: { B: 2 }, reason: "使う場面は調べもの・勉強" },
+        { id: "q8-work", label: "仕事", pts: { C: 2 }, reason: "使う場面は仕事" },
+        { id: "q8-sns", label: "SNS・副業", pts: { D: 2 }, reason: "使う場面はSNS・副業" }
       ]
     }
   ];
@@ -133,6 +133,24 @@
       if (QUESTIONS[i].kind === "ready") r += QUESTIONS[i].options[a].pts.E || 0;
     });
     return r;
+  }
+
+  /* ペース（難しさの調整）：タイプ＝何を作るか、ペース＝どれくらいの速さで進めるか、を分けて提案する */
+  function pace(readinessScore) {
+    return readinessScore >= 4
+      ? { id: "slow", label: "ゆっくりペース", perDay: "1日15分", text: "AIの経験や使える時間の答えから、1日15分ずつ進めるのがおすすめです。1日で終わらなければ、2日に分けてかまいません。Day 3（AIに作ってもらう）まで進めば、もう大きな一歩です。" }
+      : { id: "normal", label: "標準ペース", perDay: "1日20〜30分", text: "1日20〜30分が目安です。できなかった日は、次の日に続きをすればOKです。" };
+  }
+
+  /* 固定IDと回答番号の変換（回答は常に番号で保持し、得点は毎回ここから計算し直す） */
+  function toIds(answers) {
+    return answers.map(function (a, i) { return a === null || a === undefined ? null : QUESTIONS[i].options[a].id; });
+  }
+  function fromIds(ids) {
+    return ids.map(function (id, i) {
+      var k = QUESTIONS[i].options.findIndex(function (o) { return o.id === id; });
+      return k < 0 ? null : k;
+    });
   }
 
   function decide(answers) {
@@ -182,8 +200,8 @@
   var TYPES = {
     A: {
       name: "生活ツール型",
-      catch: "毎月の「あれ、いくらだっけ？」を、AIで片づける人。",
-      summary: "家計や予定など、自分と家族の「面倒」をなくす道具づくりが向いています。毎日使うので、作った効果をすぐ実感できます。",
+      catch: "毎月の「あれ、いくらだっけ？」を、AIで片づけよう。",
+      summary: "家計や予定など、自分と家族の「面倒」をなくす道具から始めるのがおすすめです。毎日使うので、作った効果をすぐ実感できます。",
       tool: "毎月の支払いメモ",
       toolDesc: "サブスク・家賃・保険など「毎月出ていくお金」を一覧にして、合計と支払日がひと目で分かるツール。",
       image: "スマホで開くと、上に「今月の合計 ¥48,300」。その下に「動画配信 ¥1,490（毎月10日）」のような行が並び、＋ボタンで1件ずつ追加できます。",
@@ -207,8 +225,8 @@
     },
     B: {
       name: "情報収集・自動化型",
-      catch: "調べた情報を、あとで「探せる宝」に変える人。",
-      summary: "調べものや情報整理を仕組みにするのが向いています。まずは「ためる・探す」を自分の手で回し、慣れてから自動化へ進むのが近道です。",
+      catch: "調べた情報を、あとで「すぐ探せる」形にしよう。",
+      summary: "調べものや情報整理を仕組みにするところから始めるのがおすすめです。まずは「ためる・探す」を自分の手で回し、慣れてから自動化へ進むのが近道です。",
       tool: "調べものストック帳",
       toolDesc: "読んだ記事や調べたことを「タイトル・URL・3行メモ・タグ」で保存し、キーワードやタグですぐ探し出せるツール。AIに要約を頼む文章を作るボタン付き。",
       image: "上に検索欄とタグ（#仕事 #子育て など）。その下に「記事タイトル／3行メモ」のカードが新しい順に並び、タグを押すとそのカードだけに絞り込めます。",
@@ -232,8 +250,8 @@
     },
     C: {
       name: "業務効率化型",
-      catch: "「あの件どうなった？」を、ひと目で終わらせる人。",
-      summary: "仕事の流れを見える形にするのが向いています。業務全体ではなく、いちばん時間を取られている作業1つから始めるのが成功のコツです。",
+      catch: "「あの件どうなった？」を、ひと目で分かるようにしよう。",
+      summary: "仕事の流れを見える形にするところから始めるのがおすすめです。業務全体ではなく、いちばん時間を取られている作業1つから始めるのが成功のコツです。",
       tool: "案件・作業の進み具合ボード",
       toolDesc: "仕事の案件や作業を1行ずつ登録し、「未着手・対応中・完了」と期限で管理するツール。件数が自動で数えられ、期限切れは色で分かります。",
       image: "上に「未着手 3｜対応中 2｜完了 5」の件数。その下に期限の近い順で案件が並び、期限切れの行は赤く表示。行のボタンを押すとステータスが切り替わります。",
@@ -257,8 +275,8 @@
     },
     D: {
       name: "発信・コンテンツ型",
-      catch: "自分の経験を、毎日の「投稿ネタ」に変える人。",
-      summary: "体験や知識を文章にして届けるのが向いています。ネタをためて下書きまで一気に作れる道具があると、発信が続きます。",
+      catch: "自分の経験を、投稿のネタに変えていこう。",
+      summary: "体験や知識を文章にして届ける準備から始めるのがおすすめです。ネタをためて下書きまで一気に作れる道具があると、発信が続きます。",
       tool: "投稿ネタ帳＆下書きメーカー",
       toolDesc: "思いついたネタを「体験・気づき・伝えたい人」の3項目でためておき、ボタン1つで投稿の下書きの形に組み立てるツール。文字数カウントとコピー付き。",
       image: "上に「ネタ 12件」。ネタを選んで「下書きを作る」を押すと、「【体験】→【気づき】→【あなたへ】」の順に並んだ下書きと文字数が表示され、コピーボタンで投稿画面に貼れます。",
@@ -282,7 +300,7 @@
     },
     E: {
       name: "まず1作型",
-      catch: "完璧より「動いた！」を、今日つかむ人。",
+      catch: "完璧より「動いた！」を、今日つかもう。",
       summary: "最初の1作は、小さくて今日動くものが一番です。1つ完成させると、AIへの頼み方が分かり、次に作りたいものが自然と見えてきます。",
       tool: "ワンタップ持ち物チェックリスト",
       toolDesc: "外出や準備の持ち物を並べて、タップでチェック。全部そろうと「準備OK！」と表示され、リセットで何度でも使えるツール。",
@@ -324,6 +342,7 @@
 
   return {
     TYPE_IDS: TYPE_IDS, QUESTIONS: QUESTIONS, TYPES: TYPES, FIX_PROMPT: FIX_PROMPT,
-    validate: validate, score: score, readiness: readiness, decide: decide, reasons: reasons, prompt: prompt
+    validate: validate, score: score, readiness: readiness, decide: decide, reasons: reasons, prompt: prompt,
+    pace: pace, toIds: toIds, fromIds: fromIds
   };
 });

@@ -58,7 +58,8 @@
       opts.appendChild(h("label", { cls: "opt", "for": "o" + i }, [input, h("span", { cls: "rd", "aria-hidden": "true" }), h("span", { text: o.label })]));
     });
     updateNav();
-    clear($("count")).appendChild(document.createTextNode(String(step + 1)));
+    clear($("count")).appendChild(h("small", { text: "質問 " }));
+    $("count").appendChild(document.createTextNode(String(step + 1)));
     $("count").appendChild(h("small", { text: " / " + N }));
     $("bar").setAttribute("aria-valuenow", String(step + 1));
     $("bar").setAttribute("aria-valuetext", N + "問中" + (step + 1) + "問目");
@@ -145,12 +146,13 @@
     if (r.rule === "q1") why = "ほかのタイプと同じ点数でしたが、Q1で選んだ「いちばん楽にしたいこと」を優先しました。";
     if (r.rule === "e") why = "ほかのタイプと同じ点数でしたが、最初は小さく始めるほうが続きやすいため「まず1作型」を優先しました。";
     $("res-why").textContent = why;
-    var pace = $("res-pace");
-    pace.hidden = !(r.readiness >= 4 && id !== "E");
-    if (!pace.hidden) {
-      clear(pace).appendChild(h("b", { text: "ゆっくりペースでOK：" }));
-      pace.appendChild(document.createTextNode("AIの経験や使える時間の答えから、1日15分ずつ進めるのがおすすめです。Day 3（AIに作ってもらう）まで進めば、もう大きな一歩です。"));
-    }
+    // ペース（タイプとは別に、経験・時間の答えから進め方を調整）
+    var pc = S.pace(r.readiness), pace = $("res-pace");
+    pace.dataset.pace = pc.id;
+    clear(pace).appendChild(h("b", { text: pc.label + "（" + pc.perDay + "）：" }));
+    pace.appendChild(document.createTextNode(pc.text));
+    $("res-hero-tool").textContent = T.tool;
+    $("res-hero-sub").textContent = "7日間の制作計画つき・" + pc.label + "（" + pc.perDay + "）";
     var bars = clear($("res-bars"));
     var max = Math.max(1, Math.max.apply(null, S.TYPE_IDS.map(function (t) { return r.scores[t]; })));
     S.TYPE_IDS.forEach(function (t) {
@@ -265,11 +267,17 @@
     var rg = document.createRange(); rg.selectNodeContents(el);
     var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(rg);
   }
+  function flashDone(btn) {
+    if (!btn.dataset.label) btn.dataset.label = btn.textContent;
+    btn.textContent = "コピーしました ✓"; btn.classList.add("done");
+    clearTimeout(btn._t);
+    btn._t = setTimeout(function () { btn.textContent = btn.dataset.label; btn.classList.remove("done"); }, 2000);
+  }
   function bindCopy(btnId, srcId, okMsg) {
     $(btnId).addEventListener("click", function () {
-      var src = $(srcId);
+      var src = $(srcId), btn = $(btnId);
       copyText(src.textContent).then(function (ok) {
-        if (ok) toast(okMsg);
+        if (ok) { toast(okMsg); flashDone(btn); }
         else { selectEl(src); toast("自動でコピーできませんでした。選択された本文をコピーしてください"); }
       });
     });
@@ -278,7 +286,7 @@
   bindCopy("copy-fix", "res-fix", "コピーしました");
   $("copy-share").addEventListener("click", function () {
     copyText(shareText).then(function (ok) {
-      if (ok) { $("copied").textContent = "コピーしました。好きな場所に貼り付けて共有できます"; $("manual").hidden = true; }
+      if (ok) { $("copied").textContent = "コピーしました。好きな場所に貼り付けて共有できます"; $("manual").hidden = true; flashDone($("copy-share")); }
       else { $("copied").textContent = ""; $("manual").hidden = false; var ta = $("manual-text"); ta.value = shareText; ta.focus(); ta.select(); }
     });
   });

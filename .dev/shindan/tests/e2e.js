@@ -27,7 +27,7 @@ async function answerAll(page, pattern) {
 
 (async () => {
   const browser = await chromium.launch();
-  for (const vp of [{ n: "SP", width: 375, height: 740, mobile: true }, { n: "SP-S", width: 320, height: 640, mobile: true }, { n: "PC", width: 1280, height: 860 }]) {
+  for (const vp of [{ n: "SP", width: 375, height: 740, mobile: true }, { n: "SP-S", width: 320, height: 640, mobile: true }, { n: "TAB", width: 768, height: 1024, mobile: true }, { n: "PC", width: 1280, height: 860 }]) {
     const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, isMobile: !!vp.mobile, hasTouch: !!vp.mobile });
     await ctx.grantPermissions(["clipboard-read", "clipboard-write"], { origin: ORIGIN });
     const page = await ctx.newPage();
@@ -38,6 +38,8 @@ async function answerAll(page, pattern) {
     const P = vp.n;
     await page.goto(URL);
     ok(`${P} 導入画面が表示`, await page.isVisible("#s-intro"));
+    const intro = await page.textContent("#s-intro");
+    ok(`${P} 開始画面に「8問・約1分」「無料・登録不要」「分かること」「開始ボタン」`, intro.includes("全8問・約1分") && intro.includes("無料・登録不要") && intro.includes("最初に作る1つのツール") && intro.includes("Day 1〜Day 7") && await page.isVisible("#start"));
     await page.screenshot({ path: `${SHOTS}/${P}-intro.png`, fullPage: true });
 
     // 開始 → Q1
@@ -57,7 +59,7 @@ async function answerAll(page, pattern) {
     await page.locator("#opts label.opt >> nth=2").click();
     await page.waitForFunction(() => window.__shindan.step === 1);
     ok(`${P} 選ぶと自動でQ2へ`, true);
-    ok(`${P} 進捗表示 2 / 8`, (await page.textContent("#count")).replace(/\s/g, "") === "2/8");
+    ok(`${P} 進捗表示 2 / 8`, (await page.textContent("#count")).replace(/\s/g, "") === "質問2/8");
     await page.locator("#opts label.opt >> nth=1").click();
     await page.waitForFunction(() => window.__shindan.step === 2);
     await page.click("#back");
@@ -107,6 +109,12 @@ async function answerAll(page, pattern) {
         line: document.getElementById("line-btn").href, x: document.getElementById("share-x").href, th: document.getElementById("share-th").href,
         hscroll: document.documentElement.scrollWidth - window.innerWidth,
         exLinks: [...document.querySelectorAll("#res-ex-link a")].map(a => a.getAttribute("href")),
+        heroTool: document.getElementById("res-hero-tool").textContent,
+        pace: document.getElementById("res-pace").dataset.pace, paceText: document.getElementById("res-pace").textContent,
+        order: [...document.querySelectorAll("#s-result [data-sec]")].map(e => e.dataset.sec).join(","),
+        heroToolSize: parseFloat(getComputedStyle(document.getElementById("res-hero-tool")).fontSize),
+        heroToolTop: document.getElementById("res-hero-tool").getBoundingClientRect().top + scrollY,
+        daysTop: document.getElementById("res-days").getBoundingClientRect().top + scrollY,
       }));
       ok(`${P}[${t}] 判定タイプ`, info.type === t, info.type);
       ok(`${P}[${t}] 結果見出しにフォーカス`, info.focus === "res-h");
@@ -114,6 +122,9 @@ async function answerAll(page, pattern) {
       ok(`${P}[${t}] 機能・理由・制作指示・完成イメージ・つまずき・点数バー`, info.feat >= 4 && info.reasons >= 1 && info.prompt.includes(S.TYPES[t].tool) && info.mock === 3 && info.pits === 3 && info.bars === 5, info);
       ok(`${P}[${t}] LINE / X / Threads のリンク形式`, info.line === "https://lin.ee/wvWY1Xo" && info.x.startsWith("https://x.com/intent/tweet?text=") && info.th.startsWith("https://www.threads.net/intent/post?text="));
       ok(`${P}[${t}] 横スクロールが出ない`, info.hscroll <= 0, info.hscroll);
+      ok(`${P}[${t}] 結果の並び順（理由→作るもの→完成形→7日間→制作指示→LINE→共有→再診断）`, info.order === "reason,tool,image,days,prompt,line,share,again", info.order);
+      ok(`${P}[${t}] 最初に作るものを冒頭に大きく表示（7日間より上・22px以上）`, info.heroTool === S.TYPES[t].tool && info.heroToolSize >= 22 && info.heroToolTop < info.daysTop, [info.heroTool, info.heroToolSize]);
+      ok(`${P}[${t}] ペースの案内（準備度に応じて）`, info.pace === S.pace(S.decide(REP[t]).readiness).id && info.paceText.length > 10, info.pace);
       for (const href of info.exLinks) ok(`${P}[${t}] 作例リンク ${href} が実在`, fs.existsSync(path.join(__dirname, "../../../shindan", href, "index.html")));
       // 全セクションをスクロールして表示 → スクリーンショット
       await page.evaluate(async () => { for (let y = 0; y < document.body.scrollHeight; y += 300) { window.scrollTo(0, y); await new Promise(r => setTimeout(r, 30)); } });
@@ -131,6 +142,9 @@ async function answerAll(page, pattern) {
     await page.waitForTimeout(200);
     ok(`${P} 制作指示をコピー`, (await page.evaluate(() => navigator.clipboard.readText())).startsWith("あなたはWeb制作の先生です"));
     ok(`${P} コピー完了のお知らせ表示`, (await page.textContent("#toast")).includes("コピーしました"));
+    ok(`${P} コピーボタン自体も「コピーしました ✓」に変わる`, (await page.textContent("#copy-prompt")).includes("コピーしました"));
+    await page.waitForTimeout(2200);
+    ok(`${P} 2秒後にボタンの文字が元に戻る`, (await page.textContent("#copy-prompt")) === "制作指示をコピー");
     // コピー（共有もクリップボードも使えない環境）
     await page.evaluate(() => { Object.defineProperty(navigator, "clipboard", { value: undefined, configurable: true }); document.execCommand = () => false; });
     await page.click("#copy-share");

@@ -45,3 +45,11 @@ print(info.language, info.duration, "s ->", len(out), "segments")
 - Long audio: VAD filter cuts silence and speeds things up. Process in the background and report progress.
 - For Remotion captions, `transcript.json` word timings map to `@remotion/captions` `Caption` objects (`startMs = start*1000`).
 - Transcripts of business calls can contain personal data: keep them local, don't upload.
+
+## Model downloads (Hugging Face) in this cloud environment
+
+Set these before any command that downloads models. Without them you get `CERTIFICATE_VERIFY_FAILED`, or the Xet transfer hangs:
+```bash
+export SSL_CERT_FILE=~/.local/share/media-tools/ca-combined.pem REQUESTS_CA_BUNDLE=~/.local/share/media-tools/ca-combined.pem HF_HUB_DISABLE_XET=1
+```
+(created by `.claude/media-setup/setup.sh`; Hugging Face hosts are allowed in the "media tools" environment).

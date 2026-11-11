@@ -48,5 +48,13 @@ Verified render commands in this container:
 ## Environment limits (cloud session)
 
 - No GPU: Whisper, Chatterbox and ComfyUI run on CPU (slow; use small models, short clips).
-- The network policy may block `huggingface.co` (model weights), `youtube.com`, `download.pytorch.org`, `download.blender.org`. If a download fails with `CONNECT tunnel failed, response 403`, the host is blocked: tell the user which host needs to be allowed instead of retrying.
+- Hugging Face is allowed in the "media tools" environment; `youtube.com`, `download.pytorch.org`, `download.blender.org` stay blocked. If a download fails with `CONNECT tunnel failed, response 403`, the host is blocked: tell the user which host needs to be allowed instead of retrying.
 - Everything outside the git repo is lost when the container is recycled. Restore with `bash .claude/media-setup/setup.sh`.
+
+## Model downloads (Hugging Face) in this cloud environment
+
+Set these before any command that downloads models. Without them you get `CERTIFICATE_VERIFY_FAILED`, or the Xet transfer hangs:
+```bash
+export SSL_CERT_FILE=~/.local/share/media-tools/ca-combined.pem REQUESTS_CA_BUNDLE=~/.local/share/media-tools/ca-combined.pem HF_HUB_DISABLE_XET=1
+```
+(created by `.claude/media-setup/setup.sh`; Hugging Face hosts are allowed in the "media tools" environment).

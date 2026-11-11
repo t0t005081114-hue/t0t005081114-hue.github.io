@@ -24,7 +24,14 @@ command -v yt-dlp >/dev/null || uv tool install yt-dlp
 
 log "faster-whisper venv (~/.venvs/whisper)"
 [ -x "$HOME/.venvs/whisper/bin/python" ] || uv venv -q "$HOME/.venvs/whisper"
-VIRTUAL_ENV="$HOME/.venvs/whisper" uv pip install -q "faster-whisper==1.2.1"
+# huggingface_hub<1 (requests-based) and av<16: newer ones break downloads behind the proxy / decode_audio
+VIRTUAL_ENV="$HOME/.venvs/whisper" uv pip install -q "faster-whisper==1.2.1" "huggingface_hub<1" "av<16"
+
+# CA bundle for model downloads: Hugging Face is passed through untouched (real public cert),
+# while the default SSL_CERT_FILE only holds the proxy CAs. Combine both.
+log "combined CA bundle (~/.local/share/media-tools/ca-combined.pem)"
+mkdir -p "$HOME/.local/share/media-tools"
+cat /usr/share/ca-certificates/mozilla/*.crt /root/.ccr/ca-bundle.crt > "$HOME/.local/share/media-tools/ca-combined.pem" 2>/dev/null || true
 
 if [ "${SKIP_HEAVY:-0}" != "1" ]; then
   log "Chatterbox venv (~/.venvs/chatterbox, Python 3.11)"

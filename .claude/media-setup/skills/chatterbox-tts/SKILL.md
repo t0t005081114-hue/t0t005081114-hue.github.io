@@ -38,3 +38,11 @@ English-only model: `from chatterbox.tts import ChatterboxTTS` → `model.genera
 - Weights download from `huggingface.co` (ResembleAI/chatterbox) on first run. If blocked (`CONNECT tunnel failed, response 403`), tell the user that host must be allowed in the environment network settings.
 - Output has an inaudible Perth watermark (by design; keep it).
 - Voice cloning: only clone a voice with that person's consent. Never imitate a real person without permission.
+
+## Model downloads (Hugging Face) in this cloud environment
+
+Set these before any command that downloads models. Without them you get `CERTIFICATE_VERIFY_FAILED`, or the Xet transfer hangs:
+```bash
+export SSL_CERT_FILE=~/.local/share/media-tools/ca-combined.pem REQUESTS_CA_BUNDLE=~/.local/share/media-tools/ca-combined.pem HF_HUB_DISABLE_XET=1
+```
+(created by `.claude/media-setup/setup.sh`; Hugging Face hosts are allowed in the "media tools" environment).

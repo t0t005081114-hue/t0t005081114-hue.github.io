@@ -46,3 +46,11 @@ Outputs are also written to `~/ComfyUI/output/`.
 - Validate errors from `/prompt` (HTTP 400 lists the bad node and input) before retrying.
 - Custom nodes (`~/ComfyUI/custom_nodes/`) run arbitrary Python: install only ones the user chose, from their official repos.
 - Generated images for videos: keep a fixed `seed` for reproducibility and note it.
+
+## Model downloads (Hugging Face) in this cloud environment
+
+Set these before any command that downloads models. Without them you get `CERTIFICATE_VERIFY_FAILED`, or the Xet transfer hangs:
+```bash
+export SSL_CERT_FILE=~/.local/share/media-tools/ca-combined.pem REQUESTS_CA_BUNDLE=~/.local/share/media-tools/ca-combined.pem HF_HUB_DISABLE_XET=1
+```
+(created by `.claude/media-setup/setup.sh`; Hugging Face hosts are allowed in the "media tools" environment).

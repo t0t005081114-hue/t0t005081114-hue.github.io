@@ -36,7 +36,7 @@ cat /usr/share/ca-certificates/mozilla/*.crt /root/.ccr/ca-bundle.crt > "$HOME/.
 if [ "${SKIP_HEAVY:-0}" != "1" ]; then
   log "Chatterbox venv (~/.venvs/chatterbox, Python 3.11)"
   [ -x "$HOME/.venvs/chatterbox/bin/python" ] || uv venv -q --python 3.11 "$HOME/.venvs/chatterbox"
-  VIRTUAL_ENV="$HOME/.venvs/chatterbox" uv pip install -q "chatterbox-tts==0.1.7"
+  VIRTUAL_ENV="$HOME/.venvs/chatterbox" uv pip install -q "chatterbox-tts==0.1.7" "setuptools<81"  # perth watermarker needs pkg_resources
 
   log "ComfyUI (~/ComfyUI)"
   if [ ! -d "$HOME/ComfyUI/.git" ]; then

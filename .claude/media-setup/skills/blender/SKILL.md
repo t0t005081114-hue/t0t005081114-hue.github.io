@@ -52,6 +52,7 @@ Then: PNG sequence → video/ProRes with the `ffmpeg` skill; GLB → web with th
 
 - Use `bpy.data` / direct property access instead of `bpy.ops` where possible (ops depend on context and fail in background mode).
 - Use absolute paths; `//` means "relative to the .blend file".
+- The apt build has no OpenImageDenoiser: set `scene.cycles.use_denoising = False` or Cycles renders fail with "Build without OpenImageDenoiser"; raise samples instead.
 - Keep samples low and resolution final-size on CPU; render a single frame first (`-f 1`) to check before the full animation.
 - Japanese text objects need a CJK font loaded with `bpy.data.fonts.load("/usr/share/fonts/...")`.
 
